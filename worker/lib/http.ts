@@ -2,7 +2,7 @@ import type { Context } from "hono";
 
 export class ApiFailure extends Error {
   constructor(
-    readonly status: 400 | 404 | 429 | 500 | 502 | 503 | 504,
+    readonly status: 400 | 404 | 413 | 429 | 500 | 502 | 503 | 504,
     readonly code: string,
     message: string,
     readonly retryable: boolean,

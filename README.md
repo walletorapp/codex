@@ -1,14 +1,15 @@
 # Walletor
 
-Walletor is a production-oriented Solana token-intelligence dashboard. This repository is the independent Phase 1 rebuild: trending discovery, a new-token radar, and token detail pages backed by a same-origin Cloudflare Worker API.
+Walletor is an independent rebuild of the legacy Base44 app. It restores the DEX-first Walletor experience: live Jupiter swaps on Solana, Wallet Standard connection, and token discovery backed by a same-origin Cloudflare Worker API.
 
-The release is intentionally read-only. It does **not** connect wallets, execute swaps, collect fees, show a revenue pool, calculate rewards, or process claims.
+The swap flow uses Jupiter Swap V2: the Worker prepares an order, the user reviews and signs it in their wallet, and Jupiter reports the confirmed execution. Revenue-pool, payout, trader, reward, and distribution figures are explicitly demo visuals; this release does not collect a Walletor fee or claim reward accounting.
 
 ## Stack
 
 - React 19, React Router, TanStack Query, strict TypeScript, and Vite
 - Cloudflare Workers Static Assets plus an integrated Hono `/api/*` Worker
 - Jupiter Tokens V2 market data, normalized and runtime-validated with Zod
+- Jupiter Swap V2 order/execute with Wallet Standard discovery
 - Vitest, React Testing Library, and Playwright
 
 No Base44 runtime, plugin, account, or service is required.
@@ -40,6 +41,8 @@ The browser never receives this key. A missing/empty key produces an explicit â€
 
 | UI                 | Worker API                 |
 | ------------------ | -------------------------- |
+| `/swap`            | `GET /api/swap/order`      |
+| â€”                  | `POST /api/swap/execute`   |
 | `/trending`        | `GET /api/tokens/trending` |
 | `/new-tokens`      | `GET /api/tokens/new`      |
 | `/tokens/:address` | `GET /api/tokens/:address` |
@@ -60,13 +63,13 @@ npx playwright install chromium # first machine setup only
 npm run test:e2e
 ```
 
-Playwright exercises desktop and mobile navigation, all three public routes, and Cloudflare SPA deep-link behavior with deterministic API interception. Worker tests cover health, normalization, secret absence, current endpoint selection, caching headers, and pre-upstream mint rejection.
+Playwright exercises the DEX quote interface, desktop/mobile navigation, discovery routes, and Cloudflare SPA deep-link behavior with deterministic API interception. Worker tests cover swap order/execute boundaries, health, normalization, secret absence, caching, and pre-upstream validation.
 
 ## Configuration and deployment
 
 - `.dev.vars` is ignored; `.dev.vars.example` contains the required name only.
 - `wrangler.jsonc` uses the current compatibility date, generated bindings, `/api/*` Worker-first routing, SPA fallback, and structured observability settings.
-- No D1 binding exists because Phase 1 has no relational state.
+- No D1 binding exists because the app does not author trade, fee, or reward records.
 - No GitHub remote, Cloudflare resource, deployment, domain, or paid service is created by this phase.
 - Configure staging/production secrets separately with Wrangler only after account and deployment ownership are approved.
 
@@ -74,6 +77,6 @@ The npm advisory report currently flags a high-severity `sharp <0.35.0` advisory
 
 ## Architecture and decisions
 
-Start with [the product spec](docs/product-spec.md), [architecture](docs/architecture.md), [security model](docs/security-model.md), and [decision log](docs/decisions.md). The proposed later-phase financial data model is documented but deliberately unimplemented.
+Start with [the product spec](docs/product-spec.md), [architecture](docs/architecture.md), [security model](docs/security-model.md), and [decision log](docs/decisions.md). The proposed financial data model is documented but deliberately unimplemented.
 
-Before swaps or rewards, product owners must decide the fee mechanism, custody, allocation formula, payout model, finality/reorg policy, geography/compliance, smart-wallet methodology, providers, and administrative controls. Those choices are not implementation details and are never inferred by this codebase.
+Before Walletor fees or rewards, product owners must decide the fee mechanism, custody, allocation formula, payout model, finality/reorg policy, geography/compliance, smart-wallet methodology, providers, and administrative controls. Those choices are not implementation details and are never inferred by this codebase.

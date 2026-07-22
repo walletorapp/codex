@@ -141,4 +141,75 @@ describe("Walletor API", () => {
       error: { code: "MARKET_DATA_NOT_CONFIGURED" },
     });
   });
+
+  it("proxies a validated Jupiter Swap V2 quote without caching it", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      Response.json({
+        requestId: "order-123",
+        transaction: null,
+        inputMint: mint,
+        outputMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        inAmount: "1000000000",
+        outAmount: "150000000",
+        otherAmountThreshold: "149000000",
+        priceImpactPct: "0.01",
+        inUsdValue: 150,
+        outUsdValue: 149.9,
+        router: "iris",
+        mode: "ultra",
+        feeBps: 2,
+        feeMint: mint,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await app.request(
+      `/api/swap/order?inputMint=${mint}&outputMint=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&amount=1000000000`,
+      undefined,
+      { JUPITER_API_KEY: "test-only" },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/swap/v2/order?"),
+      expect.objectContaining({ method: "GET" }),
+    );
+    await expect(response.json()).resolves.toMatchObject({
+      data: { requestId: "order-123", outAmount: "150000000" },
+      meta: { source: "jupiter" },
+    });
+  });
+
+  it("only reports a swap as successful from Jupiter execute", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        Response.json({
+          status: "Success",
+          signature: "confirmed-signature",
+          code: 0,
+          inputAmountResult: "1000000000",
+          outputAmountResult: "150000000",
+        }),
+      ),
+    );
+    const response = await app.request(
+      "/api/swap/execute",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          signedTransaction: "a".repeat(200),
+          requestId: "order-123",
+        }),
+      },
+      { JUPITER_API_KEY: "test-only" },
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      data: { status: "Success", signature: "confirmed-signature", code: 0 },
+    });
+  });
 });

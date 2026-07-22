@@ -1,8 +1,8 @@
 # Walletor data model
 
-## Phase 1
+## Current release
 
-No database is required. `TokenSummary` and `TokenDetail` are transient normalized market-data contracts. They include only public market metadata plus source/freshness information; they are not an accounting record.
+No database is required. `TokenSummary`, `TokenDetail`, and transient Jupiter swap responses are validated API contracts; they are not an accounting record. Jupiter reports execution status and transaction signatures, but Walletor does not persist trades, fees, balances, or rewards.
 
 ## Proposed later-phase relational model
 

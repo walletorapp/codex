@@ -1,18 +1,19 @@
-# Walletor Phase 1 product specification
+# Walletor product specification
 
 ## Goal
 
-Walletor is a responsive Solana token-intelligence dashboard. Phase 1 gives anyone a fast, honest way to discover trending and newly listed tokens, inspect normalized market data, and continue to trusted third-party research tools.
+Walletor is a responsive Solana DEX and token-intelligence dashboard. It gives traders a Jupiter-powered swap surface plus fast, honest token discovery and research tools.
 
 ## Users and jobs
 
 - A market watcher scans ranked tokens, searches by name/symbol/mint, and sorts meaningful metrics.
 - An early-token researcher scans Jupiter’s recent first-pool feed and sees listing age and liquidity without a misleading fallback pretending unrelated tokens are new.
 - A researcher opens `/tokens/:address`, reads current metrics, views a Dexscreener chart, copies the mint, and opens Dexscreener or Solscan.
+- A trader connects a Wallet Standard wallet, receives a live Jupiter quote, reviews the wallet transaction, signs it, and sees success only after Jupiter reports confirmed execution.
 
-## Phase 1 behavior
+## Current behavior
 
-- Routes: `/trending`, `/new-tokens`, `/tokens/:address`; `/` redirects to `/trending`.
+- Routes: `/swap`, `/trending`, `/new-tokens`, `/tokens/:address`; `/` redirects to `/swap`.
 - Data refreshes in the background on a conservative cadence and always shows source/freshness metadata.
 - Initial loading, refresh, empty, malformed-address, missing-secret, upstream-rate-limit, upstream-failure, and stale/degraded states are explicit.
 - Third-party images may fail without breaking identity; initials are the fallback.
@@ -20,8 +21,8 @@ Walletor is a responsive Solana token-intelligence dashboard. Phase 1 gives anyo
 
 ## Explicitly absent
 
-Wallet connection, swaps, fees, pool balances, smart-wallet rankings, rewards, and claims are later phases. No placeholder may imply those systems exist. A small “Discovery only” status explains the current boundary.
+Walletor fees, authoritative pool balances, smart-wallet rankings, rewards, and claims are absent. Demo pool figures are labeled visual-only. The browser never creates a trade record or declares a swap successful without Jupiter confirmation.
 
 ## Success criteria
 
-The three public routes operate through `/api`, direct navigation works under Cloudflare SPA fallback, secrets remain server-only, contract boundaries are runtime-validated, and automated checks cover UI and Worker success/failure paths.
+Swap and discovery routes operate through `/api`, direct navigation works under Cloudflare SPA fallback, secrets remain server-only, contract boundaries are runtime-validated, and automated checks cover UI and Worker success/failure paths.

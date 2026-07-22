@@ -1,99 +1,104 @@
-import { Activity, Menu, Radar, Search, ShieldCheck, X } from "lucide-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { ChevronDown, Menu, Search, WalletCards, X } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 
-const nav = [
-  { to: "/trending", label: "Trending", icon: Activity },
-  { to: "/new-tokens", label: "New token radar", icon: Radar },
+const primaryNav = [
+  { to: "/swap", label: "Swap" },
+  { to: "/revenue-pool", label: "Revenue Pool" },
+  { to: "/rewards", label: "Rewards" },
+  { to: "/history", label: "History" },
 ];
 
 export function AppShell() {
-  const [open, setOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   return (
-    <div className="app-shell">
+    <div className="dex-shell">
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
-      <aside
-        id="primary-sidebar"
-        className={`sidebar ${open ? "sidebar--open" : ""}`}
-        aria-label="Primary navigation"
-      >
-        <div className="brand">
-          <span className="brand__mark" aria-hidden="true">
-            W
-          </span>
-          <span>
-            <strong>Walletor</strong>
-            <small>Token intelligence</small>
-          </span>
-        </div>
-        <nav className="nav-list">
-          <p className="eyebrow">Discover</p>
-          {nav.map(({ to, label, icon: Icon }) => (
+      <header className="dex-header">
+        <button
+          className="dex-mobile-toggle"
+          onClick={() => {
+            setMobileOpen((value) => !value);
+          }}
+          aria-label="Toggle navigation"
+          aria-expanded={mobileOpen}
+        >
+          {mobileOpen ? <X /> : <Menu />}
+        </button>
+        <nav
+          className={`dex-nav ${mobileOpen ? "dex-nav--open" : ""}`}
+          aria-label="Primary navigation"
+        >
+          {primaryNav.map((item) => (
             <NavLink
-              key={to}
-              to={to}
+              key={item.to}
+              to={item.to}
               onClick={() => {
-                setOpen(false);
+                setMobileOpen(false);
               }}
-              className={({ isActive }) =>
-                `nav-link ${isActive ? "nav-link--active" : ""}`
-              }
             >
-              <Icon size={17} aria-hidden="true" />
-              <span>{label}</span>
+              {item.label}
             </NavLink>
           ))}
+          <details className="tools-menu">
+            <summary>
+              Tools <ChevronDown size={15} />
+            </summary>
+            <div>
+              <NavLink
+                to="/trending"
+                onClick={() => {
+                  setMobileOpen(false);
+                }}
+              >
+                Trending tokens
+              </NavLink>
+              <NavLink
+                to="/new-tokens"
+                onClick={() => {
+                  setMobileOpen(false);
+                }}
+              >
+                New tokens
+              </NavLink>
+            </div>
+          </details>
         </nav>
-        <div className="phase-card">
-          <ShieldCheck size={18} aria-hidden="true" />
-          <div>
-            <strong>Discovery only</strong>
-            <p>
-              Wallets and trading are intentionally unavailable in this release.
-            </p>
-          </div>
-        </div>
-      </aside>
 
-      {open && (
-        <button
-          className="sidebar-scrim"
-          aria-label="Close navigation"
-          onClick={() => {
-            setOpen(false);
-          }}
-        />
-      )}
+        <NavLink to="/swap" className="dex-brand" aria-label="Walletor home">
+          <span className="dex-brand__mark">
+            <i />
+            <b />
+          </span>
+          <span className="dex-brand__name">
+            <strong>Walletor</strong>
+            <small>
+              PAID OUT <em>$30,000,000</em>
+            </small>
+          </span>
+        </NavLink>
 
-      <div className="app-main">
-        <header className="topbar">
-          <button
-            className="icon-button mobile-menu"
-            onClick={() => {
-              setOpen((value) => !value);
-            }}
-            aria-expanded={open}
-            aria-controls="primary-sidebar"
-          >
-            {open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
-            <span className="sr-only">Toggle navigation</span>
-          </button>
-          <div className="topbar__context">
-            <span className="status-dot" aria-hidden="true" />
-            <span>Solana · live market data</span>
-          </div>
-          <NavLink className="global-search" to="/trending">
-            <Search size={15} aria-hidden="true" />
-            <span>Search tokens</span>
-            <kbd>/</kbd>
+        <div className="dex-actions">
+          <NavLink to="/trending" className="dex-search">
+            <Search size={19} />
+            <span>Search tokens...</span>
           </NavLink>
-        </header>
-        <main id="main-content" className="content" tabIndex={-1}>
-          <Outlet />
-        </main>
+          <button className="refer-button">Refer</button>
+          <WalletMultiButton className="header-wallet-button">
+            <WalletCards size={19} /> Connect
+          </WalletMultiButton>
+        </div>
+      </header>
+      <div className="demo-banner">
+        <span /> INVESTOR DEMO MODE — REVENUE FIGURES ARE VISUAL ONLY · SWAPS
+        USE LIVE JUPITER QUOTES
       </div>
+      <main id="main-content" className="dex-content" tabIndex={-1}>
+        <Outlet />
+      </main>
     </div>
   );
 }

@@ -146,10 +146,10 @@ export function TokenDetailPage() {
             </div>
           </div>
           <div className="boundary-note">
-            <strong>Trading is not enabled</strong>
+            <strong>Trade through Jupiter</strong>
             <p>
-              This foundation does not connect wallets, execute swaps, collect
-              fees, or track rewards.
+              Walletor swaps require wallet review and Jupiter confirmation.
+              Demo pool figures do not represent collected fees or rewards.
             </p>
           </div>
         </aside>

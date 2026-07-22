@@ -4,6 +4,7 @@ import { secureHeaders } from "hono/secure-headers";
 import { isSolanaAddress } from "./lib/solana";
 import { ApiFailure, publicCacheHeaders, requestIdFrom } from "./lib/http";
 import { getNewTokens, getTokenDetail, getTrending } from "./services/jupiter";
+import { executeSwap, getSwapOrder } from "./services/jupiter-swap";
 
 export const app = new Hono<{ Bindings: Partial<Env> }>();
 
@@ -43,6 +44,36 @@ app.get("/api/tokens/:address", async (c) => {
   const data = await getTokenDetail(address, c.env.JUPITER_API_KEY);
   c.header("Cache-Control", publicCacheHeaders(20)["Cache-Control"]);
   c.header("Vary", "Accept-Encoding");
+  return c.json({ data, meta: marketMeta(requestIdFrom(c)) });
+});
+
+app.get("/api/swap/order", async (c) => {
+  const data = await getSwapOrder(
+    {
+      inputMint: c.req.query("inputMint") ?? "",
+      outputMint: c.req.query("outputMint") ?? "",
+      amount: c.req.query("amount") ?? "",
+      taker: c.req.query("taker"),
+    },
+    c.env.JUPITER_API_KEY,
+  );
+  c.header("Cache-Control", "no-store");
+  return c.json({ data, meta: marketMeta(requestIdFrom(c)) });
+});
+
+app.post("/api/swap/execute", async (c) => {
+  const contentLength = Number(c.req.header("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > 150_000) {
+    throw new ApiFailure(
+      413,
+      "REQUEST_TOO_LARGE",
+      "The signed transaction payload is too large.",
+      false,
+    );
+  }
+  const input: unknown = await c.req.json().catch(() => null);
+  const data = await executeSwap(input, c.env.JUPITER_API_KEY);
+  c.header("Cache-Control", "no-store");
   return c.json({ data, meta: marketMeta(requestIdFrom(c)) });
 });
 

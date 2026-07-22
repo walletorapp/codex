@@ -6,6 +6,9 @@ import { NewTokensPage } from "../features/tokens/NewTokensPage";
 import { TokenDetailPage } from "../features/tokens/TokenDetailPage";
 import { TrendingPage } from "../features/tokens/TrendingPage";
 import { NotFoundPage } from "../features/tokens/NotFoundPage";
+import { SolanaProvider } from "../features/swap/SolanaProvider";
+import { SwapPage } from "../features/swap/SwapPage";
+import { UnavailablePage } from "./UnavailablePage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,18 +26,33 @@ const queryClient = new QueryClient({
 
 export function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<AppShell />}>
-            <Route index element={<Navigate to="/trending" replace />} />
-            <Route path="trending" element={<TrendingPage />} />
-            <Route path="new-tokens" element={<NewTokensPage />} />
-            <Route path="tokens/:address" element={<TokenDetailPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <SolanaProvider>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<AppShell />}>
+              <Route index element={<Navigate to="/swap" replace />} />
+              <Route path="swap" element={<SwapPage />} />
+              <Route
+                path="revenue-pool"
+                element={<UnavailablePage title="Revenue Pool" />}
+              />
+              <Route
+                path="rewards"
+                element={<UnavailablePage title="Rewards" />}
+              />
+              <Route
+                path="history"
+                element={<UnavailablePage title="Swap History" />}
+              />
+              <Route path="trending" element={<TrendingPage />} />
+              <Route path="new-tokens" element={<NewTokensPage />} />
+              <Route path="tokens/:address" element={<TokenDetailPage />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </SolanaProvider>
   );
 }
