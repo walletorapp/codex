@@ -1252,9 +1252,11 @@ tbody tr:last-child td {
   text-decoration: none;
 }
 .walletor-logo {
-  width: 58px;
+  width: 64px;
   height: 48px;
   flex: none;
+  object-fit: cover;
+  mix-blend-mode: screen;
   filter: drop-shadow(0 8px 18px rgba(50, 129, 224, 0.18));
 }
 .dex-brand__name strong,
@@ -1838,8 +1840,8 @@ button.swap-primary-button {
     display: none;
   }
   .walletor-logo {
-    width: 48px;
-    height: 42px;
+    width: 52px;
+    height: 39px;
   }
   .refer-button {
     display: none;
@@ -1865,8 +1867,8 @@ button.swap-primary-button {
     justify-self: start;
   }
   .walletor-logo {
-    width: 43px;
-    height: 38px;
+    width: 44px;
+    height: 33px;
   }
   .dex-brand__name strong {
     font-size: 21px;
@@ -1926,7 +1928,7 @@ button.swap-primary-button {
   }
   .walletor-logo {
     width: 36px;
-    height: 32px;
+    height: 27px;
   }
   .wallet-adapter-button.header-wallet-button {
     width: 44px;
