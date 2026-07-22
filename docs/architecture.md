@@ -7,7 +7,7 @@ React SPA (Vite, React Router, TanStack Query)
   -> same-origin /api client
   -> Hono Worker
        -> request/address validation
-       -> Birdeye adapter (timeout, one safe retry, response validation)
+       -> Jupiter Tokens V2 adapter (timeout, one safe retry, response validation)
        -> normalized shared contracts + cache/error headers
   -> Cloudflare Workers Static Assets (SPA fallback)
 ```
@@ -17,8 +17,8 @@ The browser and API are one deployable Worker project. `assets.run_worker_first`
 ## Current-source decisions (checked 2026-07-22)
 
 - Cloudflare recommends Workers Static Assets for new full-stack/SPAs and its Vite plugin for local `workerd` parity. SPA routing uses `assets.not_found_handling: "single-page-application"`. Sources: [React + Vite](https://developers.cloudflare.com/workers/framework-guides/web-apps/react/), [Vite plugin static assets](https://developers.cloudflare.com/workers/vite-plugin/reference/static-assets/), [Workers best practices](https://developers.cloudflare.com/workers/best-practices/workers-best-practices/).
-- Birdeye stays behind the Worker. Trending uses `/defi/token_trending`; new listings use the current `/defi/v2/tokens/new_listing` endpoint rather than the legacy path. Source: [Birdeye trending](https://docs.birdeye.so/reference/get-defi-token_trending), [Birdeye new listing](https://docs.birdeye.so/reference/get-defi-v2-tokens-new_listing).
-- Token detail uses `/defi/token_overview`; input is a decoded 32-byte Solana mint before interpolation.
+- Jupiter stays behind the Worker and shares one developer-platform key with later swap APIs. Trending uses `/tokens/v2/toptrending/24h`, new listings use `/tokens/v2/recent`, and token detail uses exact-mint `/tokens/v2/search`. Source: [Jupiter Tokens V2](https://developers.jup.ag/docs/tokens/token-information).
+- Token-detail input is a decoded 32-byte Solana mint before interpolation.
 - A later wallet phase should use Wallet Standard discovery. Solana’s current React guidance warns against the legacy adapter bundle unless its specific protocol support is required. Source: [Solana wallet connection](https://solana.com/developers/cookbook/wallets/connect-wallet-react).
 - Jupiter fee/custody behavior remains an unresolved later-phase decision; no Jupiter SDK or link implying in-app execution is included now.
 

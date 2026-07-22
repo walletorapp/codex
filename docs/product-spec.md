@@ -7,7 +7,7 @@ Walletor is a responsive Solana token-intelligence dashboard. Phase 1 gives anyo
 ## Users and jobs
 
 - A market watcher scans ranked tokens, searches by name/symbol/mint, and sorts meaningful metrics.
-- An early-token researcher scans Birdeye new listings and sees listing age and liquidity without a misleading fallback pretending unrelated tokens are new.
+- An early-token researcher scans Jupiter’s recent first-pool feed and sees listing age and liquidity without a misleading fallback pretending unrelated tokens are new.
 - A researcher opens `/tokens/:address`, reads current metrics, views a Dexscreener chart, copies the mint, and opens Dexscreener or Solscan.
 
 ## Phase 1 behavior

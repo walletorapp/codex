@@ -128,7 +128,7 @@ export function NewTokensPage() {
                   <Clock3 size={13} /> {formatAge(token.listedAt)} ago
                 </span>
                 <span>
-                  <Droplets size={13} /> Birdeye
+                  <Droplets size={13} /> Jupiter
                 </span>
               </div>
             </Link>

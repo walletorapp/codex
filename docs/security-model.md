@@ -2,9 +2,9 @@
 
 ## Phase 1 assets and trust boundaries
 
-- Untrusted: route params, query input, Birdeye JSON, remote image URLs, browser state, and all third-party embeds.
+- Untrusted: route params, query input, Jupiter JSON, remote image URLs, browser state, and all third-party embeds.
 - Trusted only after validation: normalized Worker contracts.
-- Secret: `BIRDEYE_API_KEY`, accessible only from the Worker binding.
+- Secret: `JUPITER_API_KEY`, accessible only from the Worker binding.
 
 The Worker validates Solana mints by Base58 decoding to exactly 32 bytes, URL-encodes upstream parameters, constrains buffered JSON to the expected small API shape, uses timeouts, and maps upstream errors without leaking bodies or credentials. The browser validates the Worker contract again to fail closed on accidental drift.
 

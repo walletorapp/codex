@@ -21,10 +21,10 @@ export function TrendingPage() {
             <Activity size={13} aria-hidden="true" /> Market pulse
           </p>
           <h1>Trending on Solana</h1>
-          <p>Ranked market activity from Birdeye, normalized by Walletor.</p>
+          <p>Ranked market activity from Jupiter, normalized by Walletor.</p>
         </div>
         <div className="source-pill">
-          <span className="status-dot" /> Birdeye · refreshes every 45s
+          <span className="status-dot" /> Jupiter · refreshes every 45s
         </div>
       </div>
 
@@ -66,7 +66,7 @@ export function TrendingPage() {
       ) : result.data.length === 0 ? (
         <EmptyState
           title="No trending tokens"
-          body="Birdeye returned an empty ranked list. Try again shortly."
+          body="Jupiter returned an empty ranked list. Try again shortly."
         />
       ) : (
         <TokenTable tokens={result.data} query={query} />

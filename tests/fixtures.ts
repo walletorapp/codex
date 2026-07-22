@@ -32,7 +32,7 @@ export function apiList(data: TokenSummary[] = [token]) {
   return {
     data,
     meta: {
-      source: "birdeye",
+      source: "jupiter",
       fetchedAt: "2026-07-22T12:00:00.000Z",
       requestId: "test-request",
     },
@@ -43,7 +43,7 @@ export function apiDetail(data: TokenDetail = tokenDetail) {
   return {
     data,
     meta: {
-      source: "birdeye",
+      source: "jupiter",
       fetchedAt: "2026-07-22T12:00:00.000Z",
       requestId: "test-request",
     },

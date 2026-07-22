@@ -4,7 +4,7 @@
 
 - Keep this repository independent of Base44; never add Base44 runtime or plugin imports.
 - Browser code may read public normalized API contracts only. It must never author authoritative trades, fees, balances, allocations, or claims.
-- Keep secrets in Worker bindings. Never expose `BIRDEYE_API_KEY` through Vite variables, client bundles, logs, fixtures, or Git.
+- Keep secrets in Worker bindings. Never expose `JUPITER_API_KEY` through Vite variables, client bundles, logs, fixtures, or Git.
 - Phase 1 is read-only token discovery. Do not add wallet, swap, fee, reward, claim, or treasury behavior without an approved later-phase design.
 - Validate external data at the Worker boundary and Solana mint addresses before upstream requests or external-link construction.
 - Financial quantities must eventually use atomic integers or exact decimals, never JavaScript floating point for accounting.
@@ -30,4 +30,4 @@ npm run build
 npm run test:e2e
 ```
 
-Before handoff, also verify that `rg -n "base44|BIRDEYE_API_KEY" src dist` finds neither Base44 code nor a bundled secret, and test direct SPA navigation with `npm run preview`.
+Before handoff, also verify that `rg -n "base44|JUPITER_API_KEY" src dist/client` finds neither Base44 code nor a bundled secret, and test direct SPA navigation with `npm run preview`.

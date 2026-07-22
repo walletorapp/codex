@@ -8,14 +8,14 @@ The release is intentionally read-only. It does **not** connect wallets, execute
 
 - React 19, React Router, TanStack Query, strict TypeScript, and Vite
 - Cloudflare Workers Static Assets plus an integrated Hono `/api/*` Worker
-- Birdeye market data, normalized and runtime-validated with Zod
+- Jupiter Tokens V2 market data, normalized and runtime-validated with Zod
 - Vitest, React Testing Library, and Playwright
 
 No Base44 runtime, plugin, account, or service is required.
 
 ## Local setup
 
-Requirements: Node.js 22.12 or newer and a Birdeye API key with access to the endpoints used by your plan.
+Requirements: Node.js 22.12 or newer and a Jupiter developer API key.
 
 ```sh
 npm ci
@@ -25,7 +25,7 @@ cp .dev.vars.example .dev.vars
 Set the server-only value in `.dev.vars`:
 
 ```text
-BIRDEYE_API_KEY=your-local-key
+JUPITER_API_KEY=your-local-key
 ```
 
 Then start the Worker-backed Vite development server:
@@ -45,7 +45,7 @@ The browser never receives this key. A missing/empty key produces an explicit â€
 | `/tokens/:address` | `GET /api/tokens/:address` |
 | â€”                  | `GET /api/health`          |
 
-The Worker validates token mints, applies upstream timeouts and a bounded safe retry, normalizes untrusted JSON, emits short shared-cache policies, and returns typed errors. The current listing route uses Birdeye `/defi/v2/tokens/new_listing`; it does not disguise a generic token-list fallback as new listings.
+The Worker validates token mints, applies upstream timeouts and a bounded safe retry, normalizes untrusted JSON, emits short shared-cache policies, and returns typed errors. Trending uses Jupiter Tokens V2 `toptrending/24h`, new listings use the `recent` first-pool feed, and token detail uses exact mint search.
 
 ## Verification
 

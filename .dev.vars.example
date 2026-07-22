@@ -1,2 +1,2 @@
 # Copy to .dev.vars and provide the value locally. Never commit .dev.vars.
-BIRDEYE_API_KEY=
+JUPITER_API_KEY=

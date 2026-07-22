@@ -5,9 +5,10 @@ import { TokenDetailSchema, TokenSummarySchema } from "../../shared/contracts";
 import { ApiFailure } from "../lib/http";
 import { isSolanaAddress } from "../lib/solana";
 
-const BIRDEYE_BASE_URL = "https://public-api.birdeye.so";
+const JUPITER_BASE_URL = "https://api.jup.ag";
 const MAX_RESPONSE_BYTES = 2_000_000;
 const UPSTREAM_TIMEOUT_MS = 6_000;
+const unknownArray = z.array(z.unknown());
 const rawObject = z.record(z.string(), z.unknown());
 
 type Fetcher = typeof fetch;
@@ -46,6 +47,16 @@ function nonnegativeInteger(...values: unknown[]): number | null {
   return parsed !== null && parsed >= 0 ? Math.trunc(parsed) : null;
 }
 
+function numericString(value: unknown): string | null {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+    return String(value);
+  }
+  if (typeof value === "string" && /^\d+(?:\.\d+)?$/.test(value.trim())) {
+    return value.trim();
+  }
+  return null;
+}
+
 function isoTimestamp(...values: unknown[]): string | null {
   for (const value of values) {
     if (typeof value !== "number" && typeof value !== "string") continue;
@@ -58,65 +69,44 @@ function isoTimestamp(...values: unknown[]): string | null {
   return null;
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  const parsed = rawObject.safeParse(value);
+  return parsed.success ? parsed.data : {};
+}
+
+function sumNullable(left: number | null, right: number | null): number | null {
+  return left === null && right === null ? null : (left ?? 0) + (right ?? 0);
+}
+
 function normalizeSummary(
   raw: Record<string, unknown>,
   fallbackRank: number | null,
 ): TokenSummary | null {
-  const address = optionalString(raw.address);
+  const address = optionalString(raw.id);
   if (!address || !isSolanaAddress(address)) return null;
 
   const symbol = optionalString(raw.symbol) ?? "UNKNOWN";
-  const rawRank = nonnegativeInteger(raw.rank);
+  const stats1h = asRecord(raw.stats1h);
+  const stats24h = asRecord(raw.stats24h);
+  const firstPool = asRecord(raw.firstPool);
+  const buyVolume = finiteNumber(stats24h.buyVolume);
+  const sellVolume = finiteNumber(stats24h.sellVolume);
+
   return TokenSummarySchema.parse({
     address,
     symbol: symbol.slice(0, 24),
     name: (optionalString(raw.name) ?? symbol).slice(0, 120),
-    logoUrl: optionalUrl(raw.logoURI ?? raw.logo_uri ?? raw.logo),
-    rank: rawRank !== null && rawRank > 0 ? rawRank : fallbackRank,
-    priceUsd: finiteNumber(raw.price),
-    marketCapUsd: finiteNumber(
-      raw.mc,
-      raw.marketcap,
-      raw.marketCap,
-      raw.realMc,
-    ),
+    logoUrl: optionalUrl(raw.icon),
+    rank: fallbackRank,
+    priceUsd: finiteNumber(raw.usdPrice),
+    marketCapUsd: finiteNumber(raw.mcap, raw.fdv),
     liquidityUsd: finiteNumber(raw.liquidity),
-    volume24hUsd: finiteNumber(
-      raw.volume24hUSD,
-      raw.volume24hUsd,
-      raw.v24hUSD,
-      raw.volumeUSD,
-    ),
-    priceChange1hPercent: finiteNumber(
-      raw.priceChange1hPercent,
-      raw.price1hChangePercent,
-    ),
-    priceChange24hPercent: finiteNumber(
-      raw.priceChange24hPercent,
-      raw.price24hChangePercent,
-      raw.v24hChangePercent,
-    ),
-    holders: nonnegativeInteger(raw.holder, raw.holders),
-    listedAt: isoTimestamp(raw.liquidityAddedAt, raw.listTime, raw.createdAt),
+    volume24hUsd: sumNullable(buyVolume, sellVolume),
+    priceChange1hPercent: finiteNumber(stats1h.priceChange),
+    priceChange24hPercent: finiteNumber(stats24h.priceChange),
+    holders: nonnegativeInteger(raw.holderCount),
+    listedAt: isoTimestamp(firstPool.createdAt, raw.createdAt),
   });
-}
-
-function getPath(value: unknown, path: string[]): unknown {
-  let current = value;
-  for (const segment of path) {
-    if (!current || typeof current !== "object" || Array.isArray(current))
-      return undefined;
-    current = (current as Record<string, unknown>)[segment];
-  }
-  return current;
-}
-
-function findArray(value: unknown, paths: string[][]): unknown[] {
-  for (const path of paths) {
-    const candidate = getPath(value, path);
-    if (Array.isArray(candidate)) return candidate;
-  }
-  return [];
 }
 
 async function readBoundedJson(response: Response): Promise<unknown> {
@@ -131,8 +121,18 @@ async function readBoundedJson(response: Response): Promise<unknown> {
   }
 
   try {
-    return await response.json();
-  } catch {
+    const body = await response.text();
+    if (new TextEncoder().encode(body).byteLength > MAX_RESPONSE_BYTES) {
+      throw new ApiFailure(
+        502,
+        "UPSTREAM_RESPONSE_TOO_LARGE",
+        "Market data response was unexpectedly large.",
+        true,
+      );
+    }
+    return JSON.parse(body) as unknown;
+  } catch (error) {
+    if (error instanceof ApiFailure) throw error;
     throw new ApiFailure(
       502,
       "UPSTREAM_INVALID_JSON",
@@ -142,7 +142,7 @@ async function readBoundedJson(response: Response): Promise<unknown> {
   }
 }
 
-async function birdeyeFetch(
+async function jupiterFetch(
   path: string,
   apiKey: string,
   fetcher: Fetcher,
@@ -151,12 +151,8 @@ async function birdeyeFetch(
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const response = await fetcher(`${BIRDEYE_BASE_URL}${path}`, {
-        headers: {
-          accept: "application/json",
-          "x-api-key": apiKey,
-          "x-chain": "solana",
-        },
+      const response = await fetcher(`${JUPITER_BASE_URL}${path}`, {
+        headers: { accept: "application/json", "x-api-key": apiKey },
         signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
       });
       lastStatus = response.status;
@@ -185,6 +181,14 @@ async function birdeyeFetch(
       30,
     );
   }
+  if (lastStatus === 401 || lastStatus === 403) {
+    throw new ApiFailure(
+      503,
+      "MARKET_DATA_AUTH_FAILED",
+      "Market data credentials were rejected.",
+      false,
+    );
+  }
   throw new ApiFailure(
     502,
     "UPSTREAM_UNAVAILABLE",
@@ -205,21 +209,29 @@ function requireKey(apiKey: string | undefined): string {
   return apiKey;
 }
 
+function parseTokenArray(json: unknown): unknown[] {
+  const parsed = unknownArray.safeParse(json);
+  if (!parsed.success) {
+    throw new ApiFailure(
+      502,
+      "UPSTREAM_SCHEMA_MISMATCH",
+      "Market data returned an unexpected token shape.",
+      true,
+    );
+  }
+  return parsed.data;
+}
+
 export async function getTrending(
   apiKey: string | undefined,
   fetcher: Fetcher = fetch,
 ): Promise<TokenSummary[]> {
-  const json = await birdeyeFetch(
-    "/defi/token_trending?sort_by=rank&sort_type=asc&offset=0&limit=50",
+  const json = await jupiterFetch(
+    "/tokens/v2/toptrending/24h?limit=50",
     requireKey(apiKey),
     fetcher,
   );
-  const values = findArray(json, [
-    ["data", "tokens"],
-    ["data", "items"],
-    ["data"],
-  ]);
-  return values.flatMap((value, index) => {
+  return parseTokenArray(json).flatMap((value, index) => {
     const parsed = rawObject.safeParse(value);
     if (!parsed.success) return [];
     const token = normalizeSummary(parsed.data, index + 1);
@@ -231,17 +243,12 @@ export async function getNewTokens(
   apiKey: string | undefined,
   fetcher: Fetcher = fetch,
 ): Promise<TokenSummary[]> {
-  const json = await birdeyeFetch(
-    "/defi/v2/tokens/new_listing?limit=20&meme_platform_enabled=true",
+  const json = await jupiterFetch(
+    "/tokens/v2/recent",
     requireKey(apiKey),
     fetcher,
   );
-  const values = findArray(json, [
-    ["data", "items"],
-    ["data", "tokens"],
-    ["data"],
-  ]);
-  return values.flatMap((value) => {
+  return parseTokenArray(json).flatMap((value) => {
     const parsed = rawObject.safeParse(value);
     if (!parsed.success) return [];
     const token = normalizeSummary(parsed.data, null);
@@ -254,38 +261,46 @@ export async function getTokenDetail(
   apiKey: string | undefined,
   fetcher: Fetcher = fetch,
 ): Promise<TokenDetail> {
-  const json = await birdeyeFetch(
-    `/defi/token_overview?address=${encodeURIComponent(address)}`,
+  const json = await jupiterFetch(
+    `/tokens/v2/search?query=${encodeURIComponent(address)}`,
     requireKey(apiKey),
     fetcher,
   );
-  const parsed = rawObject.safeParse(getPath(json, ["data"]));
-  if (!parsed.success || Object.keys(parsed.data).length === 0) {
-    throw new ApiFailure(
-      parsed.success ? 404 : 502,
-      parsed.success ? "TOKEN_NOT_FOUND" : "UPSTREAM_SCHEMA_MISMATCH",
-      parsed.success
-        ? "No market data was found for this token."
-        : "Market data returned an unexpected token shape.",
-      !parsed.success,
-    );
-  }
-  const summary = normalizeSummary({ ...parsed.data, address }, null);
-  if (!summary)
+  const values = parseTokenArray(json);
+  const raw = values
+    .map((value) => rawObject.safeParse(value))
+    .find((result) => result.success && result.data.id === address);
+  if (!raw?.success) {
     throw new ApiFailure(
       404,
       "TOKEN_NOT_FOUND",
       "No market data was found for this token.",
       false,
     );
+  }
+
+  const summary = normalizeSummary(raw.data, null);
+  if (!summary) {
+    throw new ApiFailure(
+      502,
+      "UPSTREAM_SCHEMA_MISMATCH",
+      "Market data returned an unexpected token shape.",
+      true,
+    );
+  }
+
+  const stats24h = asRecord(raw.data.stats24h);
+  const totalSupply = numericString(raw.data.totalSupply);
+  const buys24h = nonnegativeInteger(stats24h.numBuys);
+  const sells24h = nonnegativeInteger(stats24h.numSells);
 
   return TokenDetailSchema.parse({
     ...summary,
-    decimals: nonnegativeInteger(parsed.data.decimals),
-    supply: optionalString(parsed.data.supply),
-    trades24h: nonnegativeInteger(parsed.data.trade24h, parsed.data.txns24h),
-    buys24h: nonnegativeInteger(parsed.data.buy24h),
-    sells24h: nonnegativeInteger(parsed.data.sell24h),
-    uniqueWallets24h: nonnegativeInteger(parsed.data.uniqueWallet24h),
+    decimals: nonnegativeInteger(raw.data.decimals),
+    supply: totalSupply,
+    trades24h: sumNullable(buys24h, sells24h),
+    buys24h,
+    sells24h,
+    uniqueWallets24h: nonnegativeInteger(stats24h.numTraders),
   });
 }

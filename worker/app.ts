@@ -3,7 +3,7 @@ import { secureHeaders } from "hono/secure-headers";
 
 import { isSolanaAddress } from "./lib/solana";
 import { ApiFailure, publicCacheHeaders, requestIdFrom } from "./lib/http";
-import { getNewTokens, getTokenDetail, getTrending } from "./services/birdeye";
+import { getNewTokens, getTokenDetail, getTrending } from "./services/jupiter";
 
 export const app = new Hono<{ Bindings: Partial<Env> }>();
 
@@ -17,14 +17,14 @@ app.get("/api/health", (c) =>
 );
 
 app.get("/api/tokens/trending", async (c) => {
-  const data = await getTrending(c.env.BIRDEYE_API_KEY);
+  const data = await getTrending(c.env.JUPITER_API_KEY);
   c.header("Cache-Control", publicCacheHeaders(20)["Cache-Control"]);
   c.header("Vary", "Accept-Encoding");
   return c.json({ data, meta: marketMeta(requestIdFrom(c)) });
 });
 
 app.get("/api/tokens/new", async (c) => {
-  const data = await getNewTokens(c.env.BIRDEYE_API_KEY);
+  const data = await getNewTokens(c.env.JUPITER_API_KEY);
   c.header("Cache-Control", publicCacheHeaders(30)["Cache-Control"]);
   c.header("Vary", "Accept-Encoding");
   return c.json({ data, meta: marketMeta(requestIdFrom(c)) });
@@ -40,7 +40,7 @@ app.get("/api/tokens/:address", async (c) => {
       false,
     );
   }
-  const data = await getTokenDetail(address, c.env.BIRDEYE_API_KEY);
+  const data = await getTokenDetail(address, c.env.JUPITER_API_KEY);
   c.header("Cache-Control", publicCacheHeaders(20)["Cache-Control"]);
   c.header("Vary", "Accept-Encoding");
   return c.json({ data, meta: marketMeta(requestIdFrom(c)) });
@@ -99,7 +99,7 @@ app.onError((error, c) => {
 
 function marketMeta(requestId: string) {
   return {
-    source: "birdeye" as const,
+    source: "jupiter" as const,
     fetchedAt: new Date().toISOString(),
     requestId,
   };

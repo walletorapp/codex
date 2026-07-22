@@ -29,7 +29,7 @@ export const TokenDetailSchema = TokenSummarySchema.extend({
 });
 
 export const ResponseMetaSchema = z.object({
-  source: z.literal("birdeye"),
+  source: z.literal("jupiter"),
   fetchedAt: z.iso.datetime(),
   requestId: z.string().min(1),
 });
