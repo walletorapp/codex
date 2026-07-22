@@ -1,0 +1,17 @@
+# Legacy-to-rebuild migration map
+
+| Legacy behavior                                         | Phase 1 disposition                             | Reason                                            |
+| ------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------- |
+| Base44 trending function                                | Rewritten as validated Worker GET endpoint      | Remove Base44 and keep key server-side            |
+| Base44 old new-listing endpoint + generic-list fallback | Current Birdeye v2 endpoint; fail honestly      | Unrelated high-volume tokens are not “new”        |
+| Query-string token detail                               | `/tokens/:address`                              | Semantic, shareable route with early validation   |
+| Inline styling                                          | Design tokens and responsive CSS                | Accessibility and maintainability                 |
+| 10–15 second polling                                    | Conservative query freshness/background refresh | Respect plan limits and cache behavior            |
+| Swallowed fetch failures                                | Typed visible errors with retry                 | Honest degraded state                             |
+| Injected wallet globals                                 | Not migrated                                    | Later Wallet Standard phase                       |
+| Jupiter terminal/manual swap                            | Removed                                         | No authoritative transaction verification         |
+| Hard-coded pool/trader/distribution values              | Removed                                         | Simulated financial claims                        |
+| Browser-authored trades/reward updates                  | Removed                                         | Browser cannot author authoritative finance state |
+| Missing SmartWallet entities/indexer                    | Removed                                         | No provider or methodology selected               |
+
+The legacy directory remains read-only and is not a build dependency.
