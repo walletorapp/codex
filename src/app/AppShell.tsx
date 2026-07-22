@@ -3,6 +3,8 @@ import { ChevronDown, Menu, Search, WalletCards, X } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 
+import { WalletorLogo } from "../components/WalletorLogo";
+
 const primaryNav = [
   { to: "/swap", label: "Swap" },
   { to: "/revenue-pool", label: "Revenue Pool" },
@@ -69,10 +71,7 @@ export function AppShell() {
         </nav>
 
         <NavLink to="/swap" className="dex-brand" aria-label="Walletor home">
-          <span className="dex-brand__mark">
-            <i />
-            <b />
-          </span>
+          <WalletorLogo />
           <span className="dex-brand__name">
             <strong>Walletor</strong>
             <small>

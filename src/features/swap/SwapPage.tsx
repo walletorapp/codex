@@ -1,5 +1,5 @@
 import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { WalletModalButton } from "@solana/wallet-adapter-react-ui";
 import { VersionedTransaction } from "@solana/web3.js";
 import {
   ArrowDownUp,
@@ -310,7 +310,9 @@ export function SwapPage() {
         </div>
 
         {!connected ? (
-          <WalletMultiButton className="swap-primary-button" />
+          <WalletModalButton className="swap-primary-button">
+            Connect Wallet
+          </WalletModalButton>
         ) : (
           <button
             className="swap-primary-button"

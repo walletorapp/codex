@@ -67,7 +67,7 @@ test("Walletor opens on the DEX and displays a Jupiter quote", async ({
   );
   await expect(page.getByText(/iris · 0.01% impact/i)).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Select Wallet" }),
+    page.getByRole("button", { name: "Connect Wallet" }),
   ).toBeVisible();
 });
 
