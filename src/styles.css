@@ -1371,12 +1371,12 @@ tbody tr:last-child td {
   min-height: calc(100vh - 130px);
 }
 .swap-page {
-  width: min(100%, 1860px);
+  width: min(100%, 1120px);
   display: grid;
-  grid-template-columns: minmax(620px, 1.35fr) minmax(480px, 0.9fr);
-  gap: clamp(34px, 5vw, 92px);
+  grid-template-columns: minmax(520px, 1.25fr) minmax(380px, 0.8fr);
+  gap: 28px;
   margin: 0 auto;
-  padding: 54px clamp(24px, 3vw, 54px) 70px;
+  padding: 40px 24px 50px;
 }
 .pool-stage,
 .swap-card {
@@ -1390,11 +1390,11 @@ tbody tr:last-child td {
   box-shadow: inset 0 0 70px rgba(18, 58, 44, 0.06);
 }
 .pool-stage {
-  min-height: 820px;
+  min-height: 620px;
   display: flex;
   align-items: center;
   flex-direction: column;
-  padding: 48px clamp(26px, 3vw, 50px) 32px;
+  padding: 32px clamp(24px, 2.5vw, 38px) 24px;
   overflow: hidden;
 }
 .pool-stage__label {
@@ -1402,16 +1402,16 @@ tbody tr:last-child td {
   align-items: center;
   gap: 14px;
   color: #666d69;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 850;
   letter-spacing: 0.2em;
 }
 .pool-orbit {
-  width: min(410px, 67vw);
+  width: min(300px, 67vw);
   aspect-ratio: 1;
   display: grid;
   place-items: center;
-  margin: 52px auto 44px;
+  margin: 30px auto 26px;
   border: 1px solid rgba(0, 255, 163, 0.18);
   border-radius: 50%;
   background: radial-gradient(
@@ -1435,9 +1435,9 @@ tbody tr:last-child td {
   text-align: center;
 }
 .pool-orbit__inner p {
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   color: #707975;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 850;
   letter-spacing: 0.2em;
 }
@@ -1451,20 +1451,20 @@ tbody tr:last-child td {
   content: "";
 }
 .pool-orbit__inner strong {
-  font-size: clamp(36px, 3.7vw, 58px);
+  font-size: clamp(30px, 3vw, 44px);
   letter-spacing: -0.045em;
 }
 .pool-orbit__inner span {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 16px;
-  padding: 8px 17px;
+  margin-top: 12px;
+  padding: 6px 13px;
   border: 1px solid rgba(0, 255, 163, 0.16);
   border-radius: 999px;
   color: #28d991;
   background: rgba(80, 150, 139, 0.28);
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 850;
   letter-spacing: 0.12em;
 }
@@ -1472,7 +1472,7 @@ tbody tr:last-child td {
   text-align: center;
 }
 .distribution-countdown p {
-  margin-bottom: 13px;
+  margin-bottom: 10px;
   color: #5f6462;
   font-size: 11px;
   font-weight: 850;
@@ -1481,16 +1481,16 @@ tbody tr:last-child td {
 .distribution-countdown > div {
   display: flex;
   align-items: center;
-  gap: 13px;
+  gap: 10px;
 }
 .distribution-countdown strong {
-  min-width: 74px;
-  padding: 14px 10px;
+  min-width: 60px;
+  padding: 10px 8px;
   border: 1px solid #1d3b61;
-  border-radius: 18px;
+  border-radius: 14px;
   color: #56a4ff;
   background: linear-gradient(180deg, #152137, #0d1422);
-  font-size: 34px;
+  font-size: 27px;
 }
 .distribution-countdown i {
   color: #333a3d;
@@ -1504,7 +1504,7 @@ tbody tr:last-child td {
 }
 .pool-progress {
   width: 100%;
-  margin-top: 34px;
+  margin-top: 24px;
 }
 .pool-progress > span {
   height: 6px;
@@ -1530,10 +1530,10 @@ tbody tr:last-child td {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  margin-top: 30px;
+  margin-top: 20px;
 }
 .pool-metrics > div {
-  padding: 20px 12px;
+  padding: 14px 10px;
   border: 1px solid #272e2b;
   border-radius: 14px;
   background: linear-gradient(
@@ -1549,7 +1549,7 @@ tbody tr:last-child td {
 }
 .pool-metrics strong {
   color: var(--mint);
-  font-size: 25px;
+  font-size: 20px;
 }
 .pool-metrics > div:nth-child(2) strong {
   color: #58a6ff;
@@ -1566,14 +1566,14 @@ tbody tr:last-child td {
 }
 .swap-card {
   align-self: start;
-  padding: 26px 22px 18px;
+  padding: 18px 16px 14px;
   border-radius: 26px;
 }
 .network-row {
   display: flex;
   align-items: center;
-  gap: 35px;
-  padding: 0 12px 26px;
+  gap: 20px;
+  padding: 0 6px 18px;
 }
 .network-row > span {
   color: #5f6462;
@@ -1590,11 +1590,11 @@ tbody tr:last-child td {
   background: #111312;
 }
 .network-tabs button {
-  height: 43px;
+  height: 38px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 17px;
+  padding: 0 12px;
   border: 0;
   border-radius: 12px;
   color: #5d6160;
@@ -1634,10 +1634,10 @@ tbody tr:last-child td {
   display: flex;
   align-items: center;
   gap: 5px;
-  margin: 0 0 18px 12px;
+  margin: 0 0 12px 6px;
 }
 .swap-card__tabs > button {
-  height: 44px;
+  height: 40px;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -1659,7 +1659,7 @@ tbody tr:last-child td {
 }
 .amount-panel {
   position: relative;
-  padding: 21px 24px 24px;
+  padding: 16px 18px 18px;
   border: 1px solid #15253a;
   border-radius: 18px;
   background: #090e16;
@@ -1676,7 +1676,7 @@ tbody tr:last-child td {
   font-weight: 700;
 }
 .amount-panel__input {
-  min-height: 74px;
+  min-height: 62px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1690,19 +1690,19 @@ tbody tr:last-child td {
   outline: 0;
   color: white;
   background: transparent;
-  font-size: clamp(30px, 3vw, 46px);
+  font-size: clamp(26px, 2.4vw, 38px);
   font-weight: 800;
 }
 .amount-panel input::placeholder {
   color: #242636;
 }
 .token-select {
-  height: 58px;
+  height: 50px;
   flex: none;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 16px;
+  padding: 0 13px;
   border-radius: 15px;
   background: #1c1c31;
 }
@@ -1716,8 +1716,8 @@ tbody tr:last-child td {
   font-weight: 850;
 }
 .token-icon {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -1728,8 +1728,8 @@ tbody tr:last-child td {
 .reverse-button {
   position: relative;
   z-index: 2;
-  width: 50px;
-  height: 50px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   margin: -14px auto;
@@ -1740,7 +1740,7 @@ tbody tr:last-child td {
   cursor: pointer;
 }
 .quote-status {
-  min-height: 54px;
+  min-height: 48px;
   display: flex;
   align-items: center;
   margin-top: 13px;
@@ -1753,7 +1753,7 @@ tbody tr:last-child td {
 }
 .swap-primary-button {
   width: 100% !important;
-  min-height: 70px !important;
+  min-height: 58px !important;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1778,8 +1778,8 @@ button.swap-primary-button {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-top: 38px;
-  padding: 13px;
+  margin-top: 24px;
+  padding: 10px;
   border: 1px solid #161918;
   border-radius: 13px;
   color: #454b48;
@@ -1847,9 +1847,9 @@ button.swap-primary-button {
     display: none;
   }
   .swap-page {
-    gap: 35px;
-    padding-inline: 30px;
-    grid-template-columns: minmax(500px, 1.15fr) minmax(430px, 0.85fr);
+    gap: 28px;
+    padding-inline: 24px;
+    grid-template-columns: minmax(500px, 1.2fr) minmax(380px, 0.8fr);
   }
 }
 @media (max-width: 1050px) {
@@ -1913,7 +1913,7 @@ button.swap-primary-button {
     grid-template-columns: 1fr;
   }
   .pool-stage {
-    min-height: 760px;
+    min-height: 600px;
   }
   .swap-card {
     max-width: 680px;
@@ -1947,22 +1947,22 @@ button.swap-primary-button {
     padding: 18px 12px 45px;
   }
   .pool-stage {
-    min-height: 650px;
-    padding: 34px 18px 24px;
+    min-height: 560px;
+    padding: 28px 18px 22px;
     border-radius: 24px;
   }
   .pool-orbit {
-    margin-block: 38px;
+    margin-block: 28px;
   }
   .distribution-countdown strong {
-    min-width: 58px;
-    font-size: 25px;
+    min-width: 54px;
+    font-size: 23px;
   }
   .pool-metrics strong {
     font-size: 17px;
   }
   .swap-card {
-    padding: 20px 12px 14px;
+    padding: 16px 12px 12px;
     border-radius: 24px;
   }
   .network-row {
