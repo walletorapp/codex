@@ -26,7 +26,8 @@ export const USDC_TOKEN: SwapToken = {
   mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
   decimals: 6,
   color: "#2775ca",
-  logoUrl: null,
+  logoUrl:
+    "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png",
   isVerified: true,
   organicScore: null,
 };
@@ -37,10 +38,11 @@ export const SWAP_TOKENS: SwapToken[] = [
   {
     symbol: "USDT",
     name: "Tether USD",
-    mint: "Es9vMFrzaCERmJfrF4H2FYDwwfK6K8NbTqDqWxSg6MZ",
+    mint: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
     decimals: 6,
     color: "#26a17b",
-    logoUrl: null,
+    logoUrl:
+      "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.svg",
     isVerified: true,
     organicScore: null,
   },
