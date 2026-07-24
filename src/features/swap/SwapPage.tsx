@@ -12,10 +12,14 @@ import {
   ChevronDown,
   Clock3,
   ExternalLink,
+  Flame,
   LoaderCircle,
   Search,
   Settings2,
   ShieldCheck,
+  Sparkles,
+  Trophy,
+  Zap,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -247,6 +251,20 @@ function formatPercent(value: string | null): string {
     maximumFractionDigits: 4,
   }).format(parsed);
 }
+
+const LEVELS = [
+  { name: "Scout", minimum: 0, next: 3 },
+  { name: "Hunter", minimum: 3, next: 10 },
+  { name: "Navigator", minimum: 10, next: 25 },
+  { name: "Pathfinder", minimum: 25, next: 50 },
+] as const;
+
+const ACTIVITY_MILESTONES = [
+  { swaps: 1, label: "First swap", icon: Flame },
+  { swaps: 3, label: "Active trader", icon: Zap },
+  { swaps: 5, label: "Committed", icon: Sparkles },
+  { swaps: 10, label: "Round complete", icon: Trophy },
+] as const;
 
 export function SwapPage() {
   const { connection } = useConnection();
@@ -492,22 +510,142 @@ export function SwapPage() {
   const lastSwap = history[0]
     ? formatAge(clock - new Date(history[0].confirmedAt).getTime())
     : "None yet";
+  const currentWalletHistory = publicKey
+    ? history.filter((item) => item.wallet === publicKey.toBase58())
+    : history;
+  const cutoff = clock - 24 * 60 * 60 * 1_000;
+  const roundSwaps = currentWalletHistory.filter(
+    (item) => new Date(item.confirmedAt).getTime() >= cutoff,
+  ).length;
+  const totalSwaps = currentWalletHistory.length;
+  const levelIndex = LEVELS.reduce(
+    (selected, candidate, index) =>
+      totalSwaps >= candidate.minimum ? index : selected,
+    0,
+  );
+  const level = LEVELS[levelIndex] ?? LEVELS[0];
+  const levelProgress =
+    level.next === level.minimum
+      ? 100
+      : Math.min(
+          100,
+          ((totalSwaps - level.minimum) / (level.next - level.minimum)) * 100,
+        );
+  const roundProgress = Math.min(100, (roundSwaps / 10) * 100);
+  const nextMilestone = ACTIVITY_MILESTONES.find(
+    (milestone) => roundSwaps < milestone.swaps,
+  );
 
   return (
     <div className="swap-page">
-      <section className="activity-stage" aria-labelledby="activity-heading">
-        <div className="activity-stage__eyebrow">
-          <span className="status-dot" /> VERIFIED WALLETOR ACTIVITY
+      <section className="engine-card" aria-labelledby="activity-heading">
+        <header className="engine-card__header">
+          <div>
+            <small>CONFIRMED ACTIVITY</small>
+            <h2 id="activity-heading">WALLETOR ACTIVITY ENGINE</h2>
+          </div>
+          <span className={`engine-status ${roundSwaps ? "active" : ""}`}>
+            <i /> {roundSwaps ? "ACTIVE" : "INACTIVE"}
+          </span>
+        </header>
+
+        <div className="engine-level">
+          <div>
+            <Sparkles size={18} />
+            <strong>
+              Level {levelIndex + 1} — {level.name}
+            </strong>
+            <span>
+              XP: {totalSwaps} / {level.next} swaps
+            </span>
+          </div>
+          <progress
+            aria-label={`Level progress: ${String(Math.round(levelProgress))}%`}
+            max="100"
+            value={levelProgress}
+          />
         </div>
-        <div className="activity-count">
-          <small id="activity-heading">CONFIRMED SWAPS ON THIS DEVICE</small>
-          <strong>{history.length}</strong>
-          <p>
-            Only swaps confirmed by Jupiter are counted. Walletor does not
-            invent global pool, payout, trader, or volume totals.
-          </p>
+
+        <div className="engine-pool">
+          <span>
+            <ShieldCheck size={19} />
+            <span>
+              <strong>REVENUE POOL</strong>
+              <small>
+                {roundSwaps
+                  ? "Activity recorded; rewards are not enabled"
+                  : "Complete a confirmed swap to become active"}
+              </small>
+            </span>
+          </span>
+          <strong>NOT ENABLED</strong>
         </div>
-        <div className="activity-metrics">
+
+        <div className="engine-metrics">
+          <div>
+            <small>SWAPS IN LAST 24 HOURS</small>
+            <strong>{roundSwaps}</strong>
+            <span>{roundSwaps ? "VERIFIED" : "NO ACTIVITY YET"}</span>
+          </div>
+          <div>
+            <small>ACTIVITY XP</small>
+            <strong>{totalSwaps}</strong>
+            <span>1 XP PER CONFIRMED SWAP</span>
+          </div>
+        </div>
+
+        <div className="engine-ladder">
+          <header>
+            <small>24-HOUR ACTIVITY LADDER</small>
+            <span>{roundSwaps} / 10</span>
+          </header>
+          {ACTIVITY_MILESTONES.map((milestone) => {
+            const unlocked = roundSwaps >= milestone.swaps;
+            const Icon = milestone.icon;
+            return (
+              <div
+                className={`engine-milestone ${unlocked ? "unlocked" : ""}`}
+                key={milestone.swaps}
+              >
+                <span>
+                  <Icon size={16} />
+                  <strong>
+                    {milestone.swaps} {milestone.swaps === 1 ? "SWAP" : "SWAPS"}
+                  </strong>
+                </span>
+                <span>{unlocked ? "UNLOCKED" : milestone.label}</span>
+              </div>
+            );
+          })}
+          <progress
+            aria-label={`24-hour activity: ${String(Math.round(roundProgress))}%`}
+            max="100"
+            value={roundProgress}
+          />
+          <div className="engine-ladder__progress">
+            <span>
+              {nextMilestone
+                ? `${String(nextMilestone.swaps - roundSwaps)} to ${nextMilestone.label}`
+                : "All activity milestones reached"}
+            </span>
+            <span>{roundSwaps} / 10</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="engine-cta"
+          onClick={() => {
+            setSearchParams({});
+            window.setTimeout(() => {
+              document.querySelector<HTMLInputElement>("#swap-amount")?.focus();
+            }, 0);
+          }}
+        >
+          <Zap size={18} /> Swap &amp; Level Up
+        </button>
+
+        <div className="engine-proof">
           <div>
             <strong>{history.length}</strong>
             <span>CONFIRMED</span>
@@ -521,48 +659,11 @@ export function SwapPage() {
             <span>LAST ACTIVITY</span>
           </div>
         </div>
-        <div className="activity-feed">
-          <header>
-            <h2>Recent swaps</h2>
-            <button
-              type="button"
-              onClick={() => {
-                setSearchParams({ view: "history" });
-              }}
-            >
-              View all
-            </button>
-          </header>
-          {history.length ? (
-            history.slice(0, 3).map((item) => (
-              <a
-                key={item.signature}
-                href={`https://solscan.io/tx/${encodeURIComponent(item.signature)}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <span>
-                  <strong>
-                    {item.inputAmount} {item.inputToken.symbol}
-                  </strong>
-                  <small>
-                    to {item.outputAmount} {item.outputToken.symbol}
-                  </small>
-                </span>
-                <span>
-                  <small>
-                    {formatAge(clock - new Date(item.confirmedAt).getTime())}
-                  </small>
-                  <ExternalLink size={14} />
-                </span>
-              </a>
-            ))
-          ) : (
-            <p className="activity-empty">
-              Your first confirmed Walletor swap will appear here.
-            </p>
-          )}
-        </div>
+        <p className="engine-disclosure">
+          Device-local activity only. XP has no monetary value. Pool balances,
+          boosts, airdrops, and payouts remain disabled until verified treasury
+          accounting is deployed.
+        </p>
       </section>
 
       <section className="swap-card" aria-labelledby="swap-heading">
@@ -669,6 +770,7 @@ export function SwapPage() {
               </div>
               <div className="amount-panel__input">
                 <input
+                  id="swap-amount"
                   aria-label="Amount to pay"
                   inputMode="decimal"
                   placeholder="0.00"
