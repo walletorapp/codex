@@ -2065,14 +2065,8 @@ tbody tr:last-child td {
   border-radius: 50%;
 }
 .solana-dot {
-  background: linear-gradient(
-    180deg,
-    #9e58ff 0 30%,
-    #0b0d0c 30% 40%,
-    #31e5be 40% 65%,
-    #0b0d0c 65% 75%,
-    #37a5e8 75%
-  );
+  border-radius: 0;
+  background: url("/assets/solana-logo.svg") center / contain no-repeat;
 }
 .bnb-dot {
   background: #f3ba2f;

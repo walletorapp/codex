@@ -15,7 +15,7 @@ export const SOL_TOKEN: SwapToken = {
   mint: "So11111111111111111111111111111111111111112",
   decimals: 9,
   color: "linear-gradient(135deg, #9945ff, #14f195)",
-  logoUrl: null,
+  logoUrl: "/assets/solana-logo.svg",
   isVerified: true,
   organicScore: null,
 };
