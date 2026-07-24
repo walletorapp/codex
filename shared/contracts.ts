@@ -28,6 +28,16 @@ export const TokenDetailSchema = TokenSummarySchema.extend({
   uniqueWallets24h: nullableInteger,
 });
 
+export const SwapTokenSearchResultSchema = z.object({
+  address: z.string().min(32).max(44),
+  symbol: z.string().min(1).max(24),
+  name: z.string().min(1).max(120),
+  logoUrl: z.url().nullable(),
+  decimals: z.number().int().min(0).max(18),
+  isVerified: z.boolean(),
+  organicScore: nullableNumber,
+});
+
 export const ResponseMetaSchema = z.object({
   source: z.literal("jupiter"),
   fetchedAt: z.iso.datetime(),
@@ -41,6 +51,11 @@ export const TokenListResponseSchema = z.object({
 
 export const TokenDetailResponseSchema = z.object({
   data: TokenDetailSchema,
+  meta: ResponseMetaSchema,
+});
+
+export const SwapTokenSearchResponseSchema = z.object({
+  data: z.array(SwapTokenSearchResultSchema),
   meta: ResponseMetaSchema,
 });
 
@@ -63,4 +78,5 @@ export const ApiErrorSchema = z.object({
 
 export type TokenSummary = z.infer<typeof TokenSummarySchema>;
 export type TokenDetail = z.infer<typeof TokenDetailSchema>;
+export type SwapTokenSearchResult = z.infer<typeof SwapTokenSearchResultSchema>;
 export type ApiError = z.infer<typeof ApiErrorSchema>;

@@ -2,7 +2,7 @@
 
 Walletor is an independent rebuild of the legacy Base44 app. It restores the DEX-first Walletor experience: live Jupiter swaps on Solana, Wallet Standard connection, and token discovery backed by a same-origin Cloudflare Worker API.
 
-The swap flow uses Jupiter Swap V2: the Worker prepares an order, the user reviews and signs it in their wallet, and Jupiter reports the confirmed execution. Revenue-pool, payout, trader, reward, and distribution figures are explicitly demo visuals; this release does not collect a Walletor fee or claim reward accounting.
+The swap flow uses Jupiter Swap V2: the Worker prepares an order, the user reviews the final amounts and protections, signs it in their wallet, and Jupiter reports the confirmed execution. Walletor stores a private, device-local history of Jupiter-confirmed swaps. It does not claim global revenue, payout, trader, reward, or distribution totals and does not collect a Walletor fee.
 
 ## Stack
 
@@ -43,6 +43,7 @@ The browser never receives this key. A missing/empty key produces an explicit �
 | ------------------ | -------------------------- |
 | `/swap`            | `GET /api/swap/order`      |
 | —                  | `POST /api/swap/execute`   |
+| —                  | `GET /api/tokens/search`   |
 | `/trending`        | `GET /api/tokens/trending` |
 | `/new-tokens`      | `GET /api/tokens/new`      |
 | `/tokens/:address` | `GET /api/tokens/:address` |
@@ -70,7 +71,7 @@ Playwright exercises the DEX quote interface, desktop/mobile navigation, discove
 - `.dev.vars` is ignored; `.dev.vars.example` contains the required name only.
 - `wrangler.jsonc` uses the current compatibility date, generated bindings, `/api/*` Worker-first routing, SPA fallback, and structured observability settings.
 - No D1 binding exists because the app does not author trade, fee, or reward records.
-- No GitHub remote, Cloudflare resource, deployment, domain, or paid service is created by this phase.
+- The source repository is connected to `walletorapp/codex`; no Cloudflare resource, deployment, domain, or paid service is created by this phase.
 - Configure staging/production secrets separately with Wrangler only after account and deployment ownership are approved.
 
 The npm advisory report currently flags a high-severity `sharp <0.35.0` advisory through local-only Cloudflare development tooling (`miniflare`/`wrangler`). As of this build, npm offers no non-breaking fixed current release; production browser and Worker dependencies are not in that path. Recheck before publishing rather than applying npm’s suggested downgrade/force fix.

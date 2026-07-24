@@ -6,6 +6,7 @@
 - Trusted only after validation: normalized Worker contracts.
 - Secret: `JUPITER_API_KEY`, accessible only from the Worker binding.
 - Financial boundary: the browser can request and sign a Jupiter order but cannot author a successful trade record, fee, reward, pool balance, or distribution.
+- Local history boundary: confirmed swap receipts are convenience data in `localStorage`, scoped to the device and never presented as authoritative global or on-chain accounting.
 
 The Worker validates Solana mints by Base58 decoding to exactly 32 bytes, URL-encodes upstream parameters, constrains buffered JSON to the expected small API shape, uses timeouts, and maps upstream errors without leaking bodies or credentials. The browser validates the Worker contract again to fail closed on accidental drift.
 

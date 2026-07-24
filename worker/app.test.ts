@@ -55,6 +55,57 @@ describe("Walletor API", () => {
     );
   });
 
+  it("searches Jupiter tokens for the swap selector", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      Response.json([
+        {
+          id: mint,
+          symbol: "SOL",
+          name: "Wrapped SOL",
+          decimals: 9,
+          icon: "https://example.com/sol.png",
+          isVerified: true,
+          organicScore: 99,
+        },
+      ]),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await app.request("/api/tokens/search?q=SOL", undefined, {
+      JUPITER_API_KEY: "test-only",
+    });
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/tokens/v2/search?query=SOL"),
+      expect.any(Object),
+    );
+    await expect(response.json()).resolves.toMatchObject({
+      data: [
+        {
+          address: mint,
+          symbol: "SOL",
+          decimals: 9,
+          isVerified: true,
+          organicScore: 99,
+        },
+      ],
+    });
+  });
+
+  it("rejects an empty swap-token search before calling Jupiter", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await app.request("/api/tokens/search?q=", undefined, {
+      JUPITER_API_KEY: "test-only",
+    });
+
+    expect(response.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("maps Jupiter search data into token detail", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       Response.json([

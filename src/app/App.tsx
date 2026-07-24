@@ -43,7 +43,7 @@ export function App() {
               />
               <Route
                 path="history"
-                element={<UnavailablePage title="Swap History" />}
+                element={<Navigate to="/swap?view=history" replace />}
               />
               <Route path="trending" element={<TrendingPage />} />
               <Route path="new-tokens" element={<NewTokensPage />} />

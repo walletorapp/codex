@@ -1,7 +1,15 @@
 import { z } from "zod";
 
-import type { TokenDetail, TokenSummary } from "../../shared/contracts";
-import { TokenDetailSchema, TokenSummarySchema } from "../../shared/contracts";
+import type {
+  SwapTokenSearchResult,
+  TokenDetail,
+  TokenSummary,
+} from "../../shared/contracts";
+import {
+  SwapTokenSearchResultSchema,
+  TokenDetailSchema,
+  TokenSummarySchema,
+} from "../../shared/contracts";
 import { ApiFailure } from "../lib/http";
 import { isSolanaAddress } from "../lib/solana";
 
@@ -254,6 +262,61 @@ export async function getNewTokens(
     const token = normalizeSummary(parsed.data, null);
     return token ? [token] : [];
   });
+}
+
+export async function searchTokens(
+  query: string,
+  apiKey: string | undefined,
+  fetcher: Fetcher = fetch,
+): Promise<SwapTokenSearchResult[]> {
+  const normalizedQuery = query.trim();
+  if (!normalizedQuery || normalizedQuery.length > 80) {
+    throw new ApiFailure(
+      400,
+      "INVALID_TOKEN_SEARCH",
+      "Enter a token name, symbol, or mint address.",
+      false,
+    );
+  }
+
+  const json = await jupiterFetch(
+    `/tokens/v2/search?query=${encodeURIComponent(normalizedQuery)}`,
+    requireKey(apiKey),
+    fetcher,
+  );
+  return parseTokenArray(json)
+    .slice(0, 20)
+    .flatMap((value) => {
+      const parsed = rawObject.safeParse(value);
+      if (!parsed.success) return [];
+      const address = optionalString(parsed.data.id);
+      const symbol = optionalString(parsed.data.symbol);
+      const name = optionalString(parsed.data.name);
+      const decimals = nonnegativeInteger(parsed.data.decimals);
+      if (
+        !address ||
+        !isSolanaAddress(address) ||
+        !symbol ||
+        !name ||
+        decimals === null ||
+        decimals > 18
+      ) {
+        return [];
+      }
+      const token = SwapTokenSearchResultSchema.safeParse({
+        address,
+        symbol: symbol.slice(0, 24),
+        name: name.slice(0, 120),
+        logoUrl: optionalUrl(parsed.data.icon),
+        decimals,
+        isVerified:
+          parsed.data.isVerified === true ||
+          (Array.isArray(parsed.data.tags) &&
+            parsed.data.tags.includes("verified")),
+        organicScore: finiteNumber(parsed.data.organicScore),
+      });
+      return token.success ? [token.data] : [];
+    });
 }
 
 export async function getTokenDetail(

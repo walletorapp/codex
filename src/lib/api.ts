@@ -2,9 +2,11 @@ import type { z } from "zod";
 
 import {
   ApiErrorSchema,
+  SwapTokenSearchResponseSchema,
   TokenDetailResponseSchema,
   TokenListResponseSchema,
   type ApiError as ApiErrorPayload,
+  type SwapTokenSearchResult,
   type TokenDetail,
   type TokenSummary,
 } from "../../shared/contracts";
@@ -70,6 +72,19 @@ export async function fetchToken(
     await request(
       `/api/tokens/${encodeURIComponent(address)}`,
       TokenDetailResponseSchema,
+      signal,
+    )
+  ).data;
+}
+
+export async function searchSwapTokens(
+  query: string,
+  signal?: AbortSignal,
+): Promise<SwapTokenSearchResult[]> {
+  return (
+    await request(
+      `/api/tokens/search?q=${encodeURIComponent(query)}`,
+      SwapTokenSearchResponseSchema,
       signal,
     )
   ).data;

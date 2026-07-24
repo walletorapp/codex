@@ -4,6 +4,9 @@ export interface SwapToken {
   mint: string;
   decimals: number;
   color: string;
+  logoUrl: string | null;
+  isVerified: boolean;
+  organicScore: number | null;
 }
 
 export const SOL_TOKEN: SwapToken = {
@@ -12,6 +15,9 @@ export const SOL_TOKEN: SwapToken = {
   mint: "So11111111111111111111111111111111111111112",
   decimals: 9,
   color: "linear-gradient(135deg, #9945ff, #14f195)",
+  logoUrl: null,
+  isVerified: true,
+  organicScore: null,
 };
 
 export const USDC_TOKEN: SwapToken = {
@@ -20,6 +26,9 @@ export const USDC_TOKEN: SwapToken = {
   mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
   decimals: 6,
   color: "#2775ca",
+  logoUrl: null,
+  isVerified: true,
+  organicScore: null,
 };
 
 export const SWAP_TOKENS: SwapToken[] = [
@@ -31,6 +40,9 @@ export const SWAP_TOKENS: SwapToken[] = [
     mint: "Es9vMFrzaCERmJfrF4H2FYDwwfK6K8NbTqDqWxSg6MZ",
     decimals: 6,
     color: "#26a17b",
+    logoUrl: null,
+    isVerified: true,
+    organicScore: null,
   },
 ];
 

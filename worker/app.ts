@@ -3,7 +3,12 @@ import { secureHeaders } from "hono/secure-headers";
 
 import { isSolanaAddress } from "./lib/solana";
 import { ApiFailure, publicCacheHeaders, requestIdFrom } from "./lib/http";
-import { getNewTokens, getTokenDetail, getTrending } from "./services/jupiter";
+import {
+  getNewTokens,
+  getTokenDetail,
+  getTrending,
+  searchTokens,
+} from "./services/jupiter";
 import { executeSwap, getSwapOrder } from "./services/jupiter-swap";
 
 export const app = new Hono<{ Bindings: Partial<Env> }>();
@@ -27,6 +32,16 @@ app.get("/api/tokens/trending", async (c) => {
 app.get("/api/tokens/new", async (c) => {
   const data = await getNewTokens(c.env.JUPITER_API_KEY);
   c.header("Cache-Control", publicCacheHeaders(30)["Cache-Control"]);
+  c.header("Vary", "Accept-Encoding");
+  return c.json({ data, meta: marketMeta(requestIdFrom(c)) });
+});
+
+app.get("/api/tokens/search", async (c) => {
+  const data = await searchTokens(
+    c.req.query("q") ?? "",
+    c.env.JUPITER_API_KEY,
+  );
+  c.header("Cache-Control", publicCacheHeaders(20)["Cache-Control"]);
   c.header("Vary", "Accept-Encoding");
   return c.json({ data, meta: marketMeta(requestIdFrom(c)) });
 });

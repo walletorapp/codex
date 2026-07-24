@@ -5,12 +5,7 @@ import { NavLink, Outlet } from "react-router-dom";
 
 import { WalletorLogo } from "../components/WalletorLogo";
 
-const primaryNav = [
-  { to: "/swap", label: "Swap" },
-  { to: "/revenue-pool", label: "Revenue Pool" },
-  { to: "/rewards", label: "Rewards" },
-  { to: "/history", label: "History" },
-];
+const primaryNav = [{ to: "/swap", label: "Swap" }];
 
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -74,26 +69,22 @@ export function AppShell() {
           <WalletorLogo />
           <span className="dex-brand__name">
             <strong>Walletor</strong>
-            <small>
-              PAID OUT <em>$30,000,000</em>
-            </small>
+            <small>SOLANA DEX</small>
           </span>
         </NavLink>
 
         <div className="dex-actions">
           <NavLink to="/trending" className="dex-search">
             <Search size={19} />
-            <span>Search tokens...</span>
+            <span>Explore tokens</span>
           </NavLink>
-          <button className="refer-button">Refer</button>
           <WalletMultiButton className="header-wallet-button">
             <WalletCards size={19} /> Connect
           </WalletMultiButton>
         </div>
       </header>
       <div className="demo-banner">
-        <span /> INVESTOR DEMO MODE — REVENUE FIGURES ARE VISUAL ONLY · SWAPS
-        USE LIVE JUPITER QUOTES
+        <span /> NON-CUSTODIAL · LIVE JUPITER ROUTING · WALLET APPROVAL REQUIRED
       </div>
       <main id="main-content" className="dex-content" tabIndex={-1}>
         <Outlet />

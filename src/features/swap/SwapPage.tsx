@@ -1,19 +1,34 @@
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { WalletModalButton } from "@solana/wallet-adapter-react-ui";
-import { VersionedTransaction } from "@solana/web3.js";
+import {
+  PublicKey,
+  VersionedTransaction,
+  type ParsedAccountData,
+} from "@solana/web3.js";
 import {
   ArrowDownUp,
+  Check,
   CheckCircle2,
   ChevronDown,
   Clock3,
+  ExternalLink,
   LoaderCircle,
+  Search,
   Settings2,
   ShieldCheck,
-  Sparkles,
+  X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
+import type { SwapOrder } from "../../../shared/swap-contracts";
+import { searchSwapTokens } from "../../lib/api";
 import { fetchSwapOrder, submitSignedSwap } from "../../lib/swap";
+import {
+  loadSwapHistory,
+  saveSwapHistory,
+  type SwapHistoryEntry,
+} from "./history";
 import {
   fromAtomicAmount,
   SOL_TOKEN,
@@ -22,6 +37,9 @@ import {
   type SwapToken,
   USDC_TOKEN,
 } from "./tokens";
+
+const QUOTE_LIFETIME_MS = 20_000;
+const SOL_FEE_RESERVE = 5_000_000n;
 
 function bytesFromBase64(value: string): Uint8Array {
   const binary = atob(value);
@@ -34,7 +52,32 @@ function base64FromBytes(value: Uint8Array): string {
   return btoa(binary);
 }
 
-function TokenSelect({
+function tokenFromSearch(
+  result: Awaited<ReturnType<typeof searchSwapTokens>>[number],
+): SwapToken {
+  return {
+    symbol: result.symbol,
+    name: result.name,
+    mint: result.address,
+    decimals: result.decimals,
+    color: "linear-gradient(135deg, #2b67ac, #10b981)",
+    logoUrl: result.logoUrl,
+    isVerified: result.isVerified,
+    organicScore: result.organicScore,
+  };
+}
+
+function TokenIcon({ token }: { token: SwapToken }) {
+  return token.logoUrl ? (
+    <img className="token-icon" src={token.logoUrl} alt="" />
+  ) : (
+    <span className="token-icon" style={{ background: token.color }}>
+      {token.symbol.slice(0, 1)}
+    </span>
+  );
+}
+
+function TokenPicker({
   token,
   onChange,
   exclude,
@@ -43,59 +86,274 @@ function TokenSelect({
   onChange: (token: SwapToken) => void;
   exclude: string;
 }) {
-  return (
-    <label className="token-select">
-      <span className="token-icon" style={{ background: token.color }}>
-        {token.symbol.slice(0, 1)}
-      </span>
-      <select
-        aria-label={`Select ${token.symbol} token`}
-        value={token.mint}
-        onChange={(event) => {
-          const selected = SWAP_TOKENS.find(
-            (item) => item.mint === event.target.value,
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SwapToken[]>(SWAP_TOKENS);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const normalized = query.trim();
+    if (!normalized) return;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => {
+      setLoading(true);
+      void searchSwapTokens(normalized, controller.signal)
+        .then((tokens) => {
+          setResults(tokens.map(tokenFromSearch));
+          setError(tokens.length ? null : "No matching Solana tokens.");
+        })
+        .catch((caught: unknown) => {
+          if (caught instanceof DOMException && caught.name === "AbortError")
+            return;
+          setError(
+            caught instanceof Error ? caught.message : "Token search failed.",
           );
-          if (selected) onChange(selected);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }, 300);
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [open, query]);
+
+  return (
+    <>
+      <button
+        type="button"
+        className="token-select"
+        aria-label={`Choose token, currently ${token.symbol}`}
+        onClick={() => {
+          setOpen(true);
         }}
       >
-        {SWAP_TOKENS.filter((item) => item.mint !== exclude).map((item) => (
-          <option key={item.mint} value={item.mint}>
-            {item.symbol}
-          </option>
-        ))}
-      </select>
-      <ChevronDown size={17} aria-hidden="true" />
-    </label>
+        <TokenIcon token={token} />
+        <strong>{token.symbol}</strong>
+        <ChevronDown size={17} aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="token-modal-backdrop" role="presentation">
+          <section
+            className="token-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="token-modal-title"
+          >
+            <header>
+              <div>
+                <small>JUPITER TOKENS V2</small>
+                <h2 id="token-modal-title">Choose a Solana token</h2>
+              </div>
+              <button
+                type="button"
+                aria-label="Close token selector"
+                onClick={() => {
+                  setOpen(false);
+                }}
+              >
+                <X />
+              </button>
+            </header>
+            <label className="token-search-field">
+              <Search size={18} />
+              <input
+                autoFocus
+                value={query}
+                placeholder="Search name, symbol, or mint"
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  if (!event.target.value.trim()) setError(null);
+                }}
+              />
+              {loading && <LoaderCircle className="spin" size={18} />}
+            </label>
+            {error && <p className="token-search-error">{error}</p>}
+            <div className="token-results">
+              {(query.trim() ? results : SWAP_TOKENS)
+                .filter((item) => item.mint !== exclude)
+                .map((item) => (
+                  <button
+                    type="button"
+                    key={item.mint}
+                    onClick={() => {
+                      onChange(item);
+                      setOpen(false);
+                      setQuery("");
+                    }}
+                  >
+                    <TokenIcon token={item} />
+                    <span>
+                      <strong>
+                        {item.symbol}
+                        {item.isVerified && (
+                          <i title="Verified by Jupiter">
+                            <Check size={11} />
+                          </i>
+                        )}
+                      </strong>
+                      <small>{item.name}</small>
+                    </span>
+                    <code>
+                      {item.mint.slice(0, 4)}…{item.mint.slice(-4)}
+                    </code>
+                  </button>
+                ))}
+            </div>
+            <p className="token-risk-note">
+              Anyone can create a token. Verify the mint and review unverified
+              assets carefully.
+            </p>
+          </section>
+        </div>
+      )}
+    </>
   );
 }
 
+function readParsedTokenAmount(data: ParsedAccountData): string | null {
+  const parsed = data.parsed as {
+    info?: { tokenAmount?: { amount?: unknown } };
+  };
+  const amount = parsed.info?.tokenAmount?.amount;
+  return typeof amount === "string" && /^\d+$/.test(amount) ? amount : null;
+}
+
+function formatAge(milliseconds: number): string {
+  const seconds = Math.max(0, Math.floor(milliseconds / 1_000));
+  if (seconds < 60) return `${String(seconds)}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${String(minutes)}m ago`;
+  return `${String(Math.floor(minutes / 60))}h ago`;
+}
+
+function formatUsd(value: number | null): string {
+  if (value === null) return "—";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatPercent(value: string | null): string {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return "—";
+  if (Math.abs(parsed) < 0.0001) return "<0.0001";
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 4,
+  }).format(parsed);
+}
+
 export function SwapPage() {
+  const { connection } = useConnection();
   const { publicKey, signTransaction, connected } = useWallet();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const historyView = searchParams.get("view") === "history";
   const [inputToken, setInputToken] = useState(SOL_TOKEN);
   const [outputToken, setOutputToken] = useState(USDC_TOKEN);
   const [amount, setAmount] = useState("");
   const [quote, setQuote] = useState<{
     key: string;
-    output: string;
-    meta: string;
+    order: SwapOrder;
+    fetchedAt: number;
   } | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [preparingReview, setPreparingReview] = useState(false);
+  const [reviewOrder, setReviewOrder] = useState<SwapOrder | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [signature, setSignature] = useState<string | null>(null);
+  const [history, setHistory] = useState<SwapHistoryEntry[]>(loadSwapHistory);
+  const [inputBalance, setInputBalance] = useState<string | null>(null);
+  const [solBalance, setSolBalance] = useState<string | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [clock, setClock] = useState(0);
+  const [refreshNonce, setRefreshNonce] = useState(0);
+
   const atomicAmount = useMemo(
     () => toAtomicAmount(amount, inputToken.decimals),
     [amount, inputToken.decimals],
   );
   const quoteKey = `${inputToken.mint}:${outputToken.mint}:${atomicAmount ?? ""}`;
-  const quotedOutput = quote?.key === quoteKey ? quote.output : null;
-  const quoteMeta = quote?.key === quoteKey ? quote.meta : null;
+  const activeQuote = quote?.key === quoteKey ? quote : null;
+  const quotedOutput = activeQuote
+    ? fromAtomicAmount(activeQuote.order.outAmount, outputToken.decimals)
+    : null;
+  const quoteAge = activeQuote ? clock - activeQuote.fetchedAt : 0;
+  const quoteExpired = Boolean(activeQuote && quoteAge >= QUOTE_LIFETIME_MS);
+  const insufficientBalance = Boolean(
+    atomicAmount && inputBalance && BigInt(atomicAmount) > BigInt(inputBalance),
+  );
+  const lowSolForFees = Boolean(
+    connected && solBalance && BigInt(solBalance) < SOL_FEE_RESERVE,
+  );
+
+  useEffect(() => {
+    const initial = window.setTimeout(() => {
+      setClock(Date.now());
+    }, 0);
+    const interval = window.setInterval(() => {
+      setClock(Date.now());
+    }, 1_000);
+    return () => {
+      window.clearTimeout(initial);
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  const refreshBalances = useCallback(async () => {
+    if (!publicKey) {
+      setInputBalance(null);
+      setSolBalance(null);
+      return;
+    }
+    setBalanceLoading(true);
+    try {
+      const lamports = await connection.getBalance(publicKey, "confirmed");
+      setSolBalance(String(lamports));
+      if (inputToken.mint === SOL_TOKEN.mint) {
+        setInputBalance(String(lamports));
+      } else {
+        const accounts = await connection.getParsedTokenAccountsByOwner(
+          publicKey,
+          { mint: new PublicKey(inputToken.mint) },
+          "confirmed",
+        );
+        const total = accounts.value.reduce((sum, item) => {
+          if (!("parsed" in item.account.data)) return sum;
+          const parsedAmount = readParsedTokenAmount(item.account.data);
+          return parsedAmount ? sum + BigInt(parsedAmount) : sum;
+        }, 0n);
+        setInputBalance(String(total));
+      }
+    } catch {
+      setInputBalance(null);
+      setSolBalance(null);
+    } finally {
+      setBalanceLoading(false);
+    }
+  }, [connection, inputToken.mint, publicKey]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void refreshBalances();
+    }, 0);
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [refreshBalances]);
 
   useEffect(() => {
     if (!atomicAmount || atomicAmount === "0") return;
     const controller = new AbortController();
     const timeout = window.setTimeout(() => {
       setQuoteLoading(true);
+      setError(null);
       void fetchSwapOrder({
         inputMint: inputToken.mint,
         outputMint: outputToken.mint,
@@ -103,11 +361,7 @@ export function SwapPage() {
         signal: controller.signal,
       })
         .then((order) => {
-          setQuote({
-            key: quoteKey,
-            output: fromAtomicAmount(order.outAmount, outputToken.decimals),
-            meta: `${order.router ?? "Jupiter"} · ${order.priceImpactPct ?? "0"}% impact`,
-          });
+          setQuote({ key: quoteKey, order, fetchedAt: Date.now() });
         })
         .catch((caught: unknown) => {
           if (caught instanceof DOMException && caught.name === "AbortError")
@@ -124,7 +378,19 @@ export function SwapPage() {
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [atomicAmount, inputToken, outputToken, quoteKey]);
+  }, [atomicAmount, inputToken.mint, outputToken.mint, quoteKey, refreshNonce]);
+
+  const setFraction = (numerator: bigint, denominator: bigint) => {
+    if (!inputBalance) return;
+    let available = BigInt(inputBalance);
+    if (inputToken.mint === SOL_TOKEN.mint) {
+      available =
+        available > SOL_FEE_RESERVE ? available - SOL_FEE_RESERVE : 0n;
+    }
+    const selected = (available * numerator) / denominator;
+    setAmount(fromAtomicAmount(String(selected), inputToken.decimals));
+    setError(null);
+  };
 
   const reversePair = () => {
     setInputToken(outputToken);
@@ -134,12 +400,16 @@ export function SwapPage() {
     setError(null);
   };
 
-  const execute = async () => {
-    if (!publicKey || !signTransaction || !atomicAmount || atomicAmount === "0")
+  const prepareReview = async () => {
+    if (
+      !publicKey ||
+      !atomicAmount ||
+      atomicAmount === "0" ||
+      insufficientBalance
+    )
       return;
-    setSubmitting(true);
+    setPreparingReview(true);
     setError(null);
-    setSignature(null);
     try {
       const order = await fetchSwapOrder({
         inputMint: inputToken.mint,
@@ -149,18 +419,66 @@ export function SwapPage() {
       });
       if (!order.transaction)
         throw new Error("Jupiter did not build a transaction.");
+      setReviewOrder(order);
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "The order could not load.",
+      );
+    } finally {
+      setPreparingReview(false);
+    }
+  };
+
+  const confirmSwap = async () => {
+    if (!publicKey || !signTransaction || !reviewOrder?.transaction) return;
+    setSubmitting(true);
+    setError(null);
+    setSignature(null);
+    try {
       const transaction = VersionedTransaction.deserialize(
-        bytesFromBase64(order.transaction),
+        bytesFromBase64(reviewOrder.transaction),
       );
       const signed = await signTransaction(transaction);
       const result = await submitSignedSwap({
         signedTransaction: base64FromBytes(signed.serialize()),
-        requestId: order.requestId,
+        requestId: reviewOrder.requestId,
       });
       if (result.status !== "Success" || !result.signature) {
         throw new Error(result.error ?? "The swap did not confirm.");
       }
+      const entry: SwapHistoryEntry = {
+        signature: result.signature,
+        confirmedAt: new Date().toISOString(),
+        wallet: publicKey.toBase58(),
+        inputToken: {
+          symbol: inputToken.symbol,
+          mint: inputToken.mint,
+        },
+        outputToken: {
+          symbol: outputToken.symbol,
+          mint: outputToken.mint,
+        },
+        inputAmount: fromAtomicAmount(
+          result.inputAmountResult ?? reviewOrder.inAmount,
+          inputToken.decimals,
+        ),
+        outputAmount: fromAtomicAmount(
+          result.outputAmountResult ?? reviewOrder.outAmount,
+          outputToken.decimals,
+        ),
+        inputUsdValue: reviewOrder.inUsdValue,
+      };
+      const nextHistory = [
+        entry,
+        ...history.filter((item) => item.signature !== entry.signature),
+      ].slice(0, 50);
+      setHistory(nextHistory);
+      saveSwapHistory(nextHistory);
       setSignature(result.signature);
+      setReviewOrder(null);
+      setAmount("");
+      setQuote(null);
+      await refreshBalances();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "The swap failed.");
     } finally {
@@ -168,184 +486,467 @@ export function SwapPage() {
     }
   };
 
+  const uniqueTokens = new Set(
+    history.flatMap((item) => [item.inputToken.mint, item.outputToken.mint]),
+  ).size;
+  const lastSwap = history[0]
+    ? formatAge(clock - new Date(history[0].confirmedAt).getTime())
+    : "None yet";
+
   return (
     <div className="swap-page">
-      <section className="pool-stage" aria-labelledby="pool-heading">
-        <div className="pool-stage__label">
-          <span className="status-dot" /> WIN FROM THE POOL
+      <section className="activity-stage" aria-labelledby="activity-heading">
+        <div className="activity-stage__eyebrow">
+          <span className="status-dot" /> VERIFIED WALLETOR ACTIVITY
         </div>
-        <div className="pool-orbit">
-          <div className="pool-orbit__inner">
-            <p id="pool-heading">REVENUE POOL</p>
-            <strong>$1,200,006.02</strong>
-            <span>
-              <Sparkles size={13} /> DEMO DISPLAY
-            </span>
-          </div>
+        <div className="activity-count">
+          <small id="activity-heading">CONFIRMED SWAPS ON THIS DEVICE</small>
+          <strong>{history.length}</strong>
+          <p>
+            Only swaps confirmed by Jupiter are counted. Walletor does not
+            invent global pool, payout, trader, or volume totals.
+          </p>
         </div>
-        <div className="distribution-countdown">
-          <p>NEXT DISTRIBUTION</p>
+        <div className="activity-metrics">
           <div>
-            <strong>02</strong>
-            <i>:</i>
-            <strong>14</strong>
-            <i>:</i>
-            <strong>16</strong>
+            <strong>{history.length}</strong>
+            <span>CONFIRMED</span>
           </div>
-          <small>
-            hrs &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; min
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sec
-          </small>
-        </div>
-        <div className="pool-progress">
-          <span>
-            <i />
-          </span>
           <div>
-            <small>Daily round</small>
-            <small>91% complete</small>
+            <strong>{uniqueTokens}</strong>
+            <span>TOKENS TRADED</span>
+          </div>
+          <div>
+            <strong>{lastSwap}</strong>
+            <span>LAST ACTIVITY</span>
           </div>
         </div>
-        <div className="pool-metrics">
-          <div>
-            <strong>$1.20M</strong>
-            <span>POOL SIZE</span>
-          </div>
-          <div>
-            <strong>$30.00M</strong>
-            <span>DISTRIBUTED</span>
-          </div>
-          <div>
-            <strong>135.0K</strong>
-            <span>TRADERS</span>
-          </div>
+        <div className="activity-feed">
+          <header>
+            <h2>Recent swaps</h2>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchParams({ view: "history" });
+              }}
+            >
+              View all
+            </button>
+          </header>
+          {history.length ? (
+            history.slice(0, 3).map((item) => (
+              <a
+                key={item.signature}
+                href={`https://solscan.io/tx/${encodeURIComponent(item.signature)}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span>
+                  <strong>
+                    {item.inputAmount} {item.inputToken.symbol}
+                  </strong>
+                  <small>
+                    to {item.outputAmount} {item.outputToken.symbol}
+                  </small>
+                </span>
+                <span>
+                  <small>
+                    {formatAge(clock - new Date(item.confirmedAt).getTime())}
+                  </small>
+                  <ExternalLink size={14} />
+                </span>
+              </a>
+            ))
+          ) : (
+            <p className="activity-empty">
+              Your first confirmed Walletor swap will appear here.
+            </p>
+          )}
         </div>
       </section>
 
       <section className="swap-card" aria-labelledby="swap-heading">
         <div className="network-row">
           <span>NETWORK</span>
-          <div className="network-tabs">
+          <div className="network-tabs" aria-label="Selected network">
             <button className="network-tab network-tab--active">
-              <i className="solana-dot" /> SOL
-            </button>
-            <button disabled>
-              <i className="bnb-dot" /> BNB
-            </button>
-            <button disabled>
-              <i className="eth-dot" /> ETH
+              <i className="solana-dot" /> SOLANA
             </button>
           </div>
         </div>
         <div className="swap-card__tabs">
-          <button className="active">Swap</button>
-          <button disabled>
+          <button
+            className={historyView ? "" : "active"}
+            onClick={() => {
+              setSearchParams({});
+            }}
+          >
+            Swap
+          </button>
+          <button
+            className={historyView ? "active" : ""}
+            onClick={() => {
+              setSearchParams({ view: "history" });
+            }}
+          >
             <Clock3 size={15} /> History
           </button>
-          <button className="settings-button" aria-label="Swap settings">
-            <Settings2 size={19} />
-          </button>
+          {!historyView && (
+            <button
+              className={`settings-button ${settingsOpen ? "active" : ""}`}
+              aria-label="Swap settings"
+              aria-expanded={settingsOpen}
+              onClick={() => {
+                setSettingsOpen((value) => !value);
+              }}
+            >
+              <Settings2 size={19} />
+            </button>
+          )}
         </div>
         <h1 id="swap-heading" className="sr-only">
           Swap tokens with Jupiter
         </h1>
 
-        <div className="amount-panel amount-panel--pay">
-          <div className="amount-panel__label">
-            <span>You pay</span>
-            <span>Balance: —</span>
-          </div>
-          <div className="amount-panel__input">
-            <input
-              aria-label="Amount to pay"
-              inputMode="decimal"
-              placeholder="0.00"
-              value={amount}
-              onChange={(event) => {
-                setAmount(event.target.value);
-                setError(null);
-              }}
-            />
-            <TokenSelect
-              token={inputToken}
-              onChange={setInputToken}
-              exclude={outputToken.mint}
-            />
-          </div>
-        </div>
-        <button
-          className="reverse-button"
-          onClick={reversePair}
-          aria-label="Reverse token pair"
-        >
-          <ArrowDownUp size={18} />
-        </button>
-        <div className="amount-panel amount-panel--receive">
-          <div className="amount-panel__label">
-            <span>You receive</span>
-            <span />
-          </div>
-          <div className="amount-panel__input">
-            <output aria-label="Estimated amount received">
-              {quoteLoading ? (
-                <LoaderCircle className="spin" size={24} />
-              ) : (
-                (quotedOutput ?? "0.00")
-              )}
-            </output>
-            <TokenSelect
-              token={outputToken}
-              onChange={setOutputToken}
-              exclude={inputToken.mint}
-            />
-          </div>
-        </div>
-
-        <div className="quote-status">
-          {error ??
-            quoteMeta ??
-            (amount
-              ? "Finding the best Jupiter route…"
-              : "Enter an amount to get a quote")}
-        </div>
-
-        {!connected ? (
-          <WalletModalButton className="swap-primary-button">
-            Connect Wallet
-          </WalletModalButton>
-        ) : (
-          <button
-            className="swap-primary-button"
-            disabled={!quotedOutput || submitting}
-            onClick={() => {
-              void execute();
-            }}
-          >
-            {submitting ? (
-              <>
-                <LoaderCircle className="spin" size={20} /> Waiting for wallet
-              </>
+        {historyView ? (
+          <div className="swap-history-panel">
+            <header>
+              <h2>Confirmed swaps</h2>
+              <small>Stored privately on this device</small>
+            </header>
+            {history.length ? (
+              history.map((item) => (
+                <a
+                  key={item.signature}
+                  href={`https://solscan.io/tx/${encodeURIComponent(item.signature)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <span>
+                    <strong>
+                      {item.inputAmount} {item.inputToken.symbol} →{" "}
+                      {item.outputAmount} {item.outputToken.symbol}
+                    </strong>
+                    <small>
+                      {new Date(item.confirmedAt).toLocaleString()} ·{" "}
+                      {formatUsd(item.inputUsdValue)}
+                    </small>
+                  </span>
+                  <ExternalLink size={16} />
+                </a>
+              ))
             ) : (
-              "Review swap"
+              <div className="history-empty">
+                <Clock3 />
+                <strong>No confirmed swaps yet</strong>
+                <p>Completed Walletor swaps will be counted and listed here.</p>
+              </div>
             )}
-          </button>
-        )}
+          </div>
+        ) : (
+          <>
+            {settingsOpen && (
+              <div className="swap-settings-panel">
+                <strong>Automatic execution protection</strong>
+                <p>
+                  Jupiter RTSE optimizes slippage and priority fees for current
+                  network conditions. Walletor shows the final minimum received
+                  before you sign.
+                </p>
+              </div>
+            )}
+            <div className="amount-panel amount-panel--pay">
+              <div className="amount-panel__label">
+                <span>You pay</span>
+                <span>
+                  Balance:{" "}
+                  {balanceLoading
+                    ? "Loading…"
+                    : inputBalance
+                      ? `${fromAtomicAmount(inputBalance, inputToken.decimals)} ${inputToken.symbol}`
+                      : "—"}
+                </span>
+              </div>
+              <div className="amount-panel__input">
+                <input
+                  aria-label="Amount to pay"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  value={amount}
+                  onChange={(event) => {
+                    setAmount(event.target.value);
+                    setError(null);
+                  }}
+                />
+                <TokenPicker
+                  token={inputToken}
+                  onChange={(selected) => {
+                    setInputToken(selected);
+                    setAmount("");
+                    setQuote(null);
+                  }}
+                  exclude={outputToken.mint}
+                />
+              </div>
+              {connected && (
+                <div className="balance-actions">
+                  <button
+                    onClick={() => {
+                      setFraction(1n, 4n);
+                    }}
+                  >
+                    25%
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFraction(1n, 2n);
+                    }}
+                  >
+                    50%
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFraction(1n, 1n);
+                    }}
+                  >
+                    MAX
+                  </button>
+                </div>
+              )}
+            </div>
+            <button
+              className="reverse-button"
+              onClick={reversePair}
+              aria-label="Reverse token pair"
+            >
+              <ArrowDownUp size={18} />
+            </button>
+            <div className="amount-panel amount-panel--receive">
+              <div className="amount-panel__label">
+                <span>You receive</span>
+                <span>
+                  {outputToken.isVerified
+                    ? "Verified token"
+                    : "Unverified token"}
+                </span>
+              </div>
+              <div className="amount-panel__input">
+                <output aria-label="Estimated amount received">
+                  {quoteLoading ? (
+                    <LoaderCircle className="spin" size={24} />
+                  ) : (
+                    (quotedOutput ?? "0.00")
+                  )}
+                </output>
+                <TokenPicker
+                  token={outputToken}
+                  onChange={(selected) => {
+                    setOutputToken(selected);
+                    setQuote(null);
+                  }}
+                  exclude={inputToken.mint}
+                />
+              </div>
+            </div>
 
-        {signature && (
-          <a
-            className="swap-success"
-            href={`https://solscan.io/tx/${encodeURIComponent(signature)}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <CheckCircle2 size={17} /> Swap confirmed · View on Solscan
-          </a>
+            {(insufficientBalance || lowSolForFees) && (
+              <div className="balance-warning">
+                {insufficientBalance
+                  ? `Insufficient ${inputToken.symbol} balance.`
+                  : "Your SOL balance is low; the wallet may need SOL for network fees."}
+              </div>
+            )}
+
+            <div className="quote-status">
+              <span>
+                {error ??
+                  (activeQuote
+                    ? `${activeQuote.order.router ?? "Jupiter"} route · ${formatPercent(activeQuote.order.priceImpactPct)}% impact`
+                    : amount
+                      ? "Finding the best Jupiter route…"
+                      : "Enter an amount to get a quote")}
+              </span>
+              {activeQuote && (
+                <button
+                  className={quoteExpired ? "expired" : ""}
+                  onClick={() => {
+                    setRefreshNonce((value) => value + 1);
+                  }}
+                >
+                  {quoteExpired
+                    ? "Refresh quote"
+                    : `Updated ${String(Math.floor(quoteAge / 1_000))}s ago`}
+                </button>
+              )}
+            </div>
+
+            {activeQuote && (
+              <div className="quote-details">
+                <span>
+                  <small>Minimum received</small>
+                  <strong>
+                    {activeQuote.order.otherAmountThreshold
+                      ? `${fromAtomicAmount(
+                          activeQuote.order.otherAmountThreshold,
+                          outputToken.decimals,
+                        )} ${outputToken.symbol}`
+                      : "Protected by RTSE"}
+                  </strong>
+                </span>
+                <span>
+                  <small>Value</small>
+                  <strong>{formatUsd(activeQuote.order.outUsdValue)}</strong>
+                </span>
+                <span>
+                  <small>Jupiter fee</small>
+                  <strong>
+                    {activeQuote.order.feeBps !== null
+                      ? `${String(activeQuote.order.feeBps)} bps`
+                      : "Included"}
+                  </strong>
+                </span>
+              </div>
+            )}
+
+            {!connected ? (
+              <WalletModalButton className="swap-primary-button">
+                Connect Wallet
+              </WalletModalButton>
+            ) : (
+              <button
+                className="swap-primary-button"
+                disabled={
+                  !quotedOutput ||
+                  quoteExpired ||
+                  insufficientBalance ||
+                  preparingReview
+                }
+                onClick={() => {
+                  void prepareReview();
+                }}
+              >
+                {preparingReview ? (
+                  <>
+                    <LoaderCircle className="spin" size={20} /> Preparing final
+                    order
+                  </>
+                ) : (
+                  "Review final order"
+                )}
+              </button>
+            )}
+
+            {signature && (
+              <a
+                className="swap-success"
+                href={`https://solscan.io/tx/${encodeURIComponent(signature)}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <CheckCircle2 size={17} /> Swap confirmed · View on Solscan
+              </a>
+            )}
+            <div className="jupiter-credit">
+              <ShieldCheck size={16} /> Powered by Jupiter · Walletor never
+              holds your funds
+            </div>
+          </>
         )}
-        <div className="jupiter-credit">
-          <ShieldCheck size={16} /> Powered by Jupiter · Best execution on
-          Solana
-        </div>
       </section>
+
+      {reviewOrder && (
+        <div className="review-modal-backdrop" role="presentation">
+          <section
+            className="review-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="review-title"
+          >
+            <header>
+              <div>
+                <small>FINAL JUPITER ORDER</small>
+                <h2 id="review-title">Review before signing</h2>
+              </div>
+              <button
+                aria-label="Close final order"
+                onClick={() => {
+                  if (!submitting) setReviewOrder(null);
+                }}
+              >
+                <X />
+              </button>
+            </header>
+            <div className="review-route">
+              <span>
+                <TokenIcon token={inputToken} />
+                <strong>
+                  {fromAtomicAmount(reviewOrder.inAmount, inputToken.decimals)}{" "}
+                  {inputToken.symbol}
+                </strong>
+              </span>
+              <ArrowDownUp />
+              <span>
+                <TokenIcon token={outputToken} />
+                <strong>
+                  {fromAtomicAmount(
+                    reviewOrder.outAmount,
+                    outputToken.decimals,
+                  )}{" "}
+                  {outputToken.symbol}
+                </strong>
+              </span>
+            </div>
+            <dl>
+              <div>
+                <dt>Minimum received</dt>
+                <dd>
+                  {reviewOrder.otherAmountThreshold
+                    ? `${fromAtomicAmount(
+                        reviewOrder.otherAmountThreshold,
+                        outputToken.decimals,
+                      )} ${outputToken.symbol}`
+                    : "Protected by Jupiter RTSE"}
+                </dd>
+              </div>
+              <div>
+                <dt>Price impact</dt>
+                <dd>{formatPercent(reviewOrder.priceImpactPct)}%</dd>
+              </div>
+              <div>
+                <dt>Route</dt>
+                <dd>{reviewOrder.router ?? "Jupiter"}</dd>
+              </div>
+              <div>
+                <dt>Jupiter fee</dt>
+                <dd>
+                  {reviewOrder.feeBps !== null
+                    ? `${String(reviewOrder.feeBps)} bps · included`
+                    : "Included in order"}
+                </dd>
+              </div>
+            </dl>
+            <p>
+              Your wallet will show the transaction for approval. Walletor
+              cannot move funds without your signature.
+            </p>
+            <button
+              className="swap-primary-button"
+              disabled={submitting}
+              onClick={() => {
+                void confirmSwap();
+              }}
+            >
+              {submitting ? (
+                <>
+                  <LoaderCircle className="spin" size={20} /> Waiting for wallet
+                </>
+              ) : (
+                "Confirm in wallet"
+              )}
+            </button>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
