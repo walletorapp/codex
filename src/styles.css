@@ -1373,6 +1373,9 @@ tbody tr:last-child td {
 .swap-page {
   width: min(100%, 1120px);
   display: grid;
+  grid-template-areas:
+    "pool swap"
+    "engine engine";
   grid-template-columns: minmax(520px, 1.25fr) minmax(380px, 0.8fr);
   gap: 28px;
   margin: 0 auto;
@@ -1398,6 +1401,7 @@ tbody tr:last-child td {
 }
 
 .engine-card {
+  grid-area: engine;
   min-height: 620px;
   padding: 28px;
   border: 1px solid rgba(0, 255, 163, 0.2);
@@ -1816,6 +1820,7 @@ tbody tr:last-child td {
   text-align: center;
 }
 .pool-stage {
+  grid-area: pool;
   min-height: 620px;
   display: flex;
   align-items: center;
@@ -1940,10 +1945,28 @@ tbody tr:last-child td {
   background: #171918;
 }
 .pool-progress i {
-  width: 91%;
+  width: 0;
   height: 100%;
   display: block;
   background: linear-gradient(90deg, #398bff, #0ffff0, #00f39b);
+}
+.pool-progress--disabled > span {
+  border: 1px solid #242927;
+  background: #111412;
+}
+.distribution-countdown--disabled {
+  opacity: 0.72;
+}
+.distribution-countdown--disabled strong {
+  color: #5d7592;
+}
+.pool-disclosure {
+  max-width: 440px;
+  margin: 14px 0 0;
+  color: #525b57;
+  font-size: 9px;
+  line-height: 1.5;
+  text-align: center;
 }
 .pool-progress > div {
   display: flex;
@@ -1991,6 +2014,7 @@ tbody tr:last-child td {
   letter-spacing: 0.12em;
 }
 .swap-card {
+  grid-area: swap;
   align-self: start;
   padding: 18px 16px 14px;
   border-radius: 26px;
@@ -2648,6 +2672,10 @@ button.swap-primary-button {
     font-size: 10px;
   }
   .swap-page {
+    grid-template-areas:
+      "pool"
+      "swap"
+      "engine";
     grid-template-columns: 1fr;
   }
   .pool-stage {

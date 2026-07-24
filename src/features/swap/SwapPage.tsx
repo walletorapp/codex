@@ -538,6 +538,59 @@ export function SwapPage() {
 
   return (
     <div className="swap-page">
+      <section className="pool-stage" aria-labelledby="pool-heading">
+        <div className="pool-stage__label">
+          <span className="status-dot" /> COMMUNITY REVENUE POOL
+        </div>
+        <div className="pool-orbit">
+          <div className="pool-orbit__inner">
+            <p id="pool-heading">VERIFIED POOL</p>
+            <strong>$0.00</strong>
+            <span>
+              <ShieldCheck size={13} /> FEE COLLECTION NOT ENABLED
+            </span>
+          </div>
+        </div>
+        <div className="distribution-countdown distribution-countdown--disabled">
+          <p>NEXT DISTRIBUTION</p>
+          <div aria-label="Distribution is not scheduled">
+            <strong>--</strong>
+            <i>:</i>
+            <strong>--</strong>
+            <i>:</i>
+            <strong>--</strong>
+          </div>
+          <small>NOT SCHEDULED</small>
+        </div>
+        <div className="pool-progress pool-progress--disabled">
+          <span>
+            <i />
+          </span>
+          <div>
+            <small>Daily round</small>
+            <small>Waiting for verified treasury</small>
+          </div>
+        </div>
+        <div className="pool-metrics">
+          <div>
+            <strong>$0.00</strong>
+            <span>VERIFIED POOL</span>
+          </div>
+          <div>
+            <strong>{history.length}</strong>
+            <span>CONFIRMED SWAPS</span>
+          </div>
+          <div>
+            <strong>{uniqueTokens}</strong>
+            <span>TOKENS TRADED</span>
+          </div>
+        </div>
+        <p className="pool-disclosure">
+          Pool values will update only from verified on-chain fees. No demo or
+          simulated balances.
+        </p>
+      </section>
+
       <section className="engine-card" aria-labelledby="activity-heading">
         <header className="engine-card__header">
           <div>
