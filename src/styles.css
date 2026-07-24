@@ -1348,27 +1348,8 @@ tbody tr:last-child td {
 .wallet-adapter-button:not([disabled]):hover {
   background: #25ffb1;
 }
-.demo-banner {
-  height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  border-bottom: 1px solid rgba(209, 165, 0, 0.3);
-  color: #efc50c;
-  background: rgba(109, 82, 0, 0.18);
-  font-size: 11px;
-  font-weight: 850;
-  letter-spacing: 0.12em;
-}
-.demo-banner span {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #927400;
-}
 .dex-content {
-  min-height: calc(100vh - 130px);
+  min-height: calc(100vh - 88px);
 }
 .swap-page {
   width: min(100%, 1120px);
@@ -2657,13 +2638,6 @@ button.swap-primary-button {
   }
   .dex-search {
     display: none;
-  }
-  .demo-banner {
-    height: auto;
-    min-height: 42px;
-    padding: 10px 18px;
-    text-align: center;
-    font-size: 10px;
   }
   .swap-page {
     grid-template-areas:

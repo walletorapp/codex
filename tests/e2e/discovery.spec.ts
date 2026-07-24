@@ -84,7 +84,6 @@ test("Walletor opens on the DEX and displays a Jupiter quote", async ({
 }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/\/swap$/);
-  await expect(page.getByText("LIVE JUPITER ROUTING")).toBeVisible();
   await expect(page.getByText("WALLETOR ACTIVITY ENGINE")).toBeVisible();
   await expect(page.getByText("REVENUE POOL", { exact: true })).toBeVisible();
   await expect(page.getByText("NOT ENABLED", { exact: true })).toBeVisible();

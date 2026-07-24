@@ -83,9 +83,6 @@ export function AppShell() {
           </WalletMultiButton>
         </div>
       </header>
-      <div className="demo-banner">
-        <span /> NON-CUSTODIAL · LIVE JUPITER ROUTING · WALLET APPROVAL REQUIRED
-      </div>
       <main id="main-content" className="dex-content" tabIndex={-1}>
         <Outlet />
       </main>
